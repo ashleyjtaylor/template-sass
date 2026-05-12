@@ -1,0 +1,2 @@
+- [Project overview](memory/project_overview.md) — stripped-down single-product SaaS template: pricing → signup → Stripe Checkout → paywalled dashboard
+- [Never commit to main](memory/never_commit_to_main.md) — always `git checkout -b <branch>` before any commit, especially right after a merge when muscle memory says "I'm working"

@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// better-auth vendor tables. Column names stay camelCase to match better-auth's
+// vendor schema 1:1. Our additions (`entityId`, `firstname`, `lastname`,
+// `stripeCustomerId`) follow the same convention for consistency.
+
+model User {
+  id               String   @id
+  entityId         String   @unique
+  requestId        String?
+  firstname        String
+  lastname         String
+  name             String?
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  stripeCustomerId String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  sessions     Session[]
+  accounts     Account[]
+  subscription Subscription?
+
+  @@index([requestId])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  entityId  String   @unique
+  requestId String?
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  entityId              String    @unique
+  requestId             String?
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  entityId   String   @unique
+  requestId  String?
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([requestId])
+  @@map("verification")
+}
+
+// Stripe subscription mirror — one row per user, UPSERTed by the
+// `customer.subscription.*` webhook handler. `status` carries the Stripe enum
+// (active, trialing, past_due, canceled, incomplete, incomplete_expired,
+// unpaid). `getUserAccessState` reads this row to decide paid / past_due /
+// paywalled.
+model Subscription {
+  entityId             String    @id @map("entity_id")
+  userId               String    @unique @map("user_id")
+  stripeSubscriptionId String    @unique @map("stripe_subscription_id")
+  stripeCustomerId     String    @map("stripe_customer_id")
+  stripePriceId        String    @map("stripe_price_id")
+  planKey              String    @map("plan_key")
+  status               String
+  currentPeriodStart   DateTime  @map("current_period_start")
+  currentPeriodEnd     DateTime  @map("current_period_end")
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  canceledAt           DateTime? @map("canceled_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  requestId            String?   @map("request_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("subscription")
+}
+
+// Idempotency anchor for the Stripe webhook. Inserted before processing;
+// uniqueness on `id` short-circuits replays.
+model StripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@index([type, processedAt(sort: Desc)])
+  @@map("stripe_event")
+}

@@ -1,0 +1,19 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'infra/*'
+
+# Allow these packages' postinstall scripts to run (pnpm 11 replaced
+# `onlyBuiltDependencies` with `allowBuilds`). esbuild downloads its native
+# binary; lefthook installs git hooks.
+allowBuilds:
+  esbuild: true
+  lefthook: true
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+  msgpackr-extract: true
+
+# Workspace packages are symlinked (pnpm default). We don't use `pnpm deploy`
+# any more — the Docker runner stage just copies the whole built workspace from
+# the build stage, so the symlink chain stays intact at runtime.
