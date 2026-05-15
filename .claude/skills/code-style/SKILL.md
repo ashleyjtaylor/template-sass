@@ -166,3 +166,23 @@ CloudWatch Logs Insights queries the first-arg fields directly (`{ $.requestId =
 **After applying changes**
 
 Run `pnpm lint && pnpm typecheck`. Fix all errors before reporting done.
+
+
+**Environment Variables**
+
+When creating providers or doing environment specific logic, use `APP_ENV` to conditionally select the environment. Do not create additional variables.
+
+Example:
+
+```ts
+// BAD
+MAIL_TRANSPORT=ses // .env
+
+const transport = env.MAIL_TRANSPORT === 'ses' ? new SESTransport() : new MailPitTransport()
+
+// GOOD
+APP_ENV=local // .env
+
+const transport = env.APP_ENV === 'staging' ? new SESTransport() : new MailPitTransport()
+
+```

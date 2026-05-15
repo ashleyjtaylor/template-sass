@@ -31,6 +31,7 @@ import {
   StorageType
 } from 'aws-cdk-lib/aws-rds'
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager'
+import { EmailIdentity, Identity } from 'aws-cdk-lib/aws-ses'
 import type { Construct } from 'constructs'
 import { type EnvName, PRODUCT } from './config.js'
 
@@ -39,6 +40,12 @@ export interface DataStackProps extends StackProps {
   vpc: Vpc
   rdsSg: SecurityGroup
   imageTag: string
+  // Per-env From address (e.g. "noreply@staging.example.com"). When set,
+  // the stack provisions an SES domain identity for the address's domain
+  // and outputs the DKIM tokens for the operator to add to DNS. Empty
+  // means the mailer is unconfigured — `sendResetPassword` logs and skips
+  // (mirrors the Stripe pattern).
+  mailFrom?: string
 }
 
 type DbSecrets = {
@@ -64,11 +71,12 @@ export class DataStack extends Stack {
   readonly database: DatabaseInstance
   readonly dbSecrets: DbSecrets
   readonly appSecrets: AppSecrets
+  readonly sesIdentity?: EmailIdentity
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props)
 
-    const { envName, vpc, rdsSg, imageTag } = props
+    const { envName, vpc, rdsSg, imageTag, mailFrom } = props
 
     const ecrLifecycleRules = [
       {
@@ -204,5 +212,44 @@ export class DataStack extends Stack {
       value: migratorLogGroup.logGroupName,
       description: 'Log group for the migrator task — tail this on failure'
     })
+
+    // SES domain identity. Created only when a fork supplies a per-env
+    // From address (`-c mailFrom.<env>=…`). Domain identities cover all
+    // addresses on the domain (noreply@, billing@, etc.) so future email
+    // types reuse this identity. The DKIM tokens are exposed as outputs
+    // — the operator copies them as CNAME records into DNS to complete
+    // verification. Until DNS is in place, SES sends will fail; the
+    // mailer's try/catch in apps/api/src/lib/auth.ts logs and swallows
+    // so the user-facing reset request still 200s.
+    if (mailFrom) {
+      const domain = mailFrom.split('@')[1]
+
+      if (!domain) {
+        throw new Error(
+          `Invalid mailFrom for ${envName}: "${mailFrom}" — expected an email of the form name@domain`
+        )
+      }
+
+      this.sesIdentity = new EmailIdentity(this, 'MailIdentity', {
+        identity: Identity.domain(domain)
+      })
+
+      new CfnOutput(this, 'MailIdentityName', {
+        value: this.sesIdentity.emailIdentityName,
+        description: 'SES domain identity name (== the verified domain)'
+      })
+      new CfnOutput(this, 'MailDkimToken1', {
+        value: `${this.sesIdentity.dkimDnsTokenName1} CNAME ${this.sesIdentity.dkimDnsTokenValue1}`,
+        description: 'SES DKIM CNAME record #1 — add to DNS to complete verification'
+      })
+      new CfnOutput(this, 'MailDkimToken2', {
+        value: `${this.sesIdentity.dkimDnsTokenName2} CNAME ${this.sesIdentity.dkimDnsTokenValue2}`,
+        description: 'SES DKIM CNAME record #2 — add to DNS to complete verification'
+      })
+      new CfnOutput(this, 'MailDkimToken3', {
+        value: `${this.sesIdentity.dkimDnsTokenName3} CNAME ${this.sesIdentity.dkimDnsTokenValue3}`,
+        description: 'SES DKIM CNAME record #3 — add to DNS to complete verification'
+      })
+    }
   }
 }

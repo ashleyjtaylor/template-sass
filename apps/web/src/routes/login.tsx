@@ -80,15 +80,25 @@ function LoginPage() {
           onChange={setEmail}
           disabled={signIn.isPending}
         />
-        <AuthField
-          id="password"
-          label="Password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={setPassword}
-          disabled={signIn.isPending}
-        />
+        <div className="space-y-1">
+          <AuthField
+            id="password"
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={setPassword}
+            disabled={signIn.isPending}
+          />
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+        </div>
 
         <Button type="submit" className="group w-full" disabled={signIn.isPending}>
           {signIn.isPending ? (

@@ -21,10 +21,19 @@ const UNAUTHED_ONLY_PATHS: ReadonlySet<string> = new Set(['/login', '/signup'])
 
 // Public routes — render for both authed and unauthed users with no
 // gate. Pricing lives here so unauthed visitors can pick a plan.
-const PUBLIC_PATHS: ReadonlySet<string> = new Set(['/'])
+// Password-reset routes are public because authed users can also
+// trigger a reset from the user menu, and the email link they then
+// click must work whether or not their session has been revoked.
+const PUBLIC_PATHS: ReadonlySet<string> = new Set(['/', '/forgot-password', '/reset-password'])
 
 // Routes that hide the sidebar shell (auth forms, pricing).
-const SHELL_HIDDEN_PATHS: ReadonlySet<string> = new Set(['/login', '/signup', '/'])
+const SHELL_HIDDEN_PATHS: ReadonlySet<string> = new Set([
+  '/login',
+  '/signup',
+  '/',
+  '/forgot-password',
+  '/reset-password'
+])
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootRoute

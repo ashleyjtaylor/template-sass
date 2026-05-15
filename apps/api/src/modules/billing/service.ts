@@ -38,7 +38,7 @@ export async function buildCheckoutSession(params: CheckoutSessionParams) {
   }
 
   const successUrl = `${webBaseUrl()}/dashboard?session_id={CHECKOUT_SESSION_ID}`
-  const cancelUrl = `${webBaseUrl()}/subscribe`
+  const cancelUrl = `${webBaseUrl()}/`
 
   return createStripeCheckout({
     userEntityId: params.userEntityId,

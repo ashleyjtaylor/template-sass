@@ -22,7 +22,11 @@ export default defineConfig({
       STRIPE_WEBHOOK_SECRET: 'whsec_test_billing_integration',
       STRIPE_PRICE_ID_PRO: 'price_test_pro',
       STRIPE_PORTAL_RETURN_URL: 'http://localhost:5174',
-      WEB_BASE_URL: 'http://localhost:5174'
+      WEB_BASE_URL: 'http://localhost:5174',
+      // Mailer — APP_ENV defaults to 'local' (selecting SMTP). Tests
+      // stub the transport at the module boundary; these are just enough
+      // to let env.ts load without throwing.
+      MAIL_FROM: 'test@example.com'
     }
   }
 })

@@ -19,5 +19,18 @@ services:
       timeout: 5s
       retries: 5
 
+  # Local email catcher. SMTP on :1025 (no auth), web UI on :8025.
+  # The mailer package's SMTP transport targets this by default —
+  # see packages/mailer/src/env.ts (MAIL_SMTP_HOST/MAIL_SMTP_PORT).
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: template-mailpit
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
 volumes:
   postgres-data:

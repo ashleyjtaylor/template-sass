@@ -72,3 +72,34 @@ export const useSignOut = () => {
     onSettled: () => queryClient.clear()
   })
 }
+
+export interface ForgotPasswordInput {
+  email: string
+}
+
+export const useForgotPassword = () =>
+  useMutation({
+    mutationFn: (input: ForgotPasswordInput) =>
+      api('/api/auth/request-password-reset', z.unknown(), {
+        method: 'POST',
+        // The full origin is required — better-auth's `originCheck`
+        // middleware compares it against `trustedOrigins` (CORS_ORIGINS).
+        // It also becomes the SPA URL the API redirects to after the
+        // /reset-password/<token> callback validates the token.
+        body: { email: input.email, redirectTo: `${window.location.origin}/reset-password` }
+      })
+  })
+
+export interface ResetPasswordInput {
+  token: string
+  newPassword: string
+}
+
+export const useResetPassword = () =>
+  useMutation({
+    mutationFn: (input: ResetPasswordInput) =>
+      api('/api/auth/reset-password', z.unknown(), {
+        method: 'POST',
+        body: { token: input.token, newPassword: input.newPassword }
+      })
+  })

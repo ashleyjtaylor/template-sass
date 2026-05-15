@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { Input } from '@/components/ui/input'
 
@@ -17,10 +18,10 @@ export function AuthCardLayout({
   footer
 }: AuthCardLayoutProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,_var(--foreground)_1px,_transparent_0)] [background-size:24px_24px]"
+        className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_1px_1px,var(--foreground)_1px,transparent_0)] bg-size-[24px_24px]"
       />
       <div
         aria-hidden
@@ -31,7 +32,26 @@ export function AuthCardLayout({
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-background to-transparent"
       />
 
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
+        <Link
+          to="/"
+          className="flex items-center gap-2 rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <div
+            aria-hidden
+            className="size-6 rounded-md bg-linear-to-br from-foreground to-foreground/50"
+          />
+          <span className="text-sm font-semibold tracking-tight">App</span>
+        </Link>
+        <Link
+          to="/"
+          className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          ← Back to home
+        </Link>
+      </header>
+
+      <div className="relative flex flex-1 items-center justify-center px-4 pb-10">
         <div className="w-full max-w-sm">
           <div className="relative rounded-lg border bg-card shadow-sm">
             <div

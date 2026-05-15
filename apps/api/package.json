@@ -18,6 +18,7 @@
     "@template/billing": "workspace:*",
     "@template/db": "workspace:*",
     "@template/errors": "workspace:*",
+    "@template/mailer": "workspace:*",
     "better-auth": "1.6.9",
     "hono": "4.12.18",
     "pino": "10.3.1",

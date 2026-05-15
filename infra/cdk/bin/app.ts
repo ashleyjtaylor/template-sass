@@ -21,6 +21,21 @@ const stripePriceIdProFor = (env: EnvName): string | undefined => {
   return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
+// Per-env From address for outbound email (e.g. password reset). Forks
+// set via cdk.json or `-c mailFrom.staging=noreply@staging.example.com`.
+// When set, the data-stack provisions an SES `EmailIdentity` for the
+// address's domain (DKIM tokens output as CFN outputs — operator copies
+// them into DNS) and the app-stack injects MAIL_TRANSPORT=ses + MAIL_FROM
+// into the container env plus grants ses:SendEmail to the task role.
+// Empty until configured — the mailer module's `isMailerConfigured()`
+// predicate causes the better-auth `sendResetPassword` callback to log
+// and skip rather than crash the request.
+const mailFromFor = (env: EnvName): string | undefined => {
+  const value = app.node.tryGetContext(`mailFrom.${env}`)
+
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
 const envs: EnvName[] = ['staging', 'production']
 
 for (const env of envs) {
@@ -32,12 +47,15 @@ for (const env of envs) {
 
   const network = new NetworkStack(app, `${PRODUCT}-${env}-network`, baseProps)
 
+  const mailFrom = mailFromFor(env)
+
   const data = new DataStack(app, `${PRODUCT}-${env}-data`, {
     ...baseProps,
     envName: env,
     vpc: network.vpc,
     rdsSg: network.rdsSg,
-    imageTag
+    imageTag,
+    ...(mailFrom !== undefined && { mailFrom })
   })
 
   new AppStack(app, `${PRODUCT}-${env}-app`, {
@@ -51,6 +69,8 @@ for (const env of envs) {
     dbSecrets: data.dbSecrets,
     appSecrets: data.appSecrets,
     imageTag,
-    stripePriceIdPro: stripePriceIdProFor(env)
+    stripePriceIdPro: stripePriceIdProFor(env),
+    ...(data.sesIdentity !== undefined && { sesIdentity: data.sesIdentity }),
+    ...(mailFrom !== undefined && { mailFrom })
   })
 }

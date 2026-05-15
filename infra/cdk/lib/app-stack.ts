@@ -27,6 +27,7 @@ import {
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2'
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs'
 import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3'
+import type { EmailIdentity } from 'aws-cdk-lib/aws-ses'
 import type { Construct } from 'constructs'
 import { type EnvName, PRODUCT } from './config.js'
 import { APP_PORT } from './network-stack.js'
@@ -45,6 +46,12 @@ export interface AppStackProps extends StackProps {
   // `stripePriceIdPro.<env>`. Empty string until configured; the billing
   // module's `isBillingConfigured()` predicate gates real Stripe calls.
   stripePriceIdPro?: string
+  // SES identity created by the data-stack when `-c mailFrom.<env>=…`
+  // is set. When present together with `mailFrom`, the API task gets
+  // MAIL_TRANSPORT=ses, MAIL_FROM=<address>, and an IAM grant to
+  // ses:SendEmail scoped to this identity's ARN.
+  sesIdentity?: EmailIdentity
+  mailFrom?: string
 }
 
 export class AppStack extends Stack {
@@ -61,7 +68,9 @@ export class AppStack extends Stack {
       dbSecrets,
       appSecrets,
       imageTag,
-      stripePriceIdPro
+      stripePriceIdPro,
+      sesIdentity,
+      mailFrom
     } = props
 
     const logGroup = new LogGroup(this, 'ApiLogs', {
@@ -149,7 +158,13 @@ export class AppStack extends Stack {
         CORS_ORIGINS: `https://${webDistribution.distributionDomainName}`,
         WEB_BASE_URL: `https://${webDistribution.distributionDomainName}`,
         STRIPE_PORTAL_RETURN_URL: `https://${webDistribution.distributionDomainName}`,
-        STRIPE_PRICE_ID_PRO: stripePriceIdPro ?? ''
+        STRIPE_PRICE_ID_PRO: stripePriceIdPro ?? '',
+        // Mailer — APP_ENV (already set above) selects the transport
+        // (`local` → Mailpit, `staging`/`production` → SES). MAIL_FROM
+        // empty means "mailer not configured": `isMailerConfigured()`
+        // returns false and the better-auth `sendResetPassword` callback
+        // logs and skips rather than crashing the request.
+        MAIL_FROM: mailFrom ?? ''
       },
       secrets: { ...dbSecrets, ...appSecrets },
       stopTimeout: Duration.seconds(30),
@@ -166,6 +181,13 @@ export class AppStack extends Stack {
     })
 
     container.addPortMappings({ containerPort: APP_PORT })
+
+    // Grant the API task role permission to send via SES on the verified
+    // identity. Scoping to the identity ARN means a fork that adds more
+    // identities later doesn't accidentally widen this principal's reach.
+    if (sesIdentity) {
+      sesIdentity.grantSendEmail(taskDef.taskRole)
+    }
 
     const service = new FargateService(this, 'ApiService', {
       cluster,

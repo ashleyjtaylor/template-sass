@@ -65,8 +65,25 @@ export function registerShutdown(
   process.on('SIGTERM', shutdown)
   process.on('SIGINT', shutdown)
 
+  // Dev-only orphan watchdog: in `pnpm dev`, turbo's TUI / tsx watch
+  // occasionally fails to forward SIGINT down the process tree, leaving the
+  // API node process alive after Ctrl-C and squatting on port 3000. When the
+  // parent dies, this process is reparented to PID 1 — detect that and exit
+  // ourselves. Skipped in production where ECS owns the lifecycle.
+  let orphanWatchdog: NodeJS.Timeout | undefined
+  if (process.env['NODE_ENV'] !== 'production') {
+    orphanWatchdog = setInterval(() => {
+      if (process.ppid === 1) {
+        logger.info('parent process gone — exiting (dev orphan watchdog)')
+        process.exit(0)
+      }
+    }, 1000)
+    orphanWatchdog.unref()
+  }
+
   return () => {
     process.off('SIGTERM', shutdown)
     process.off('SIGINT', shutdown)
+    if (orphanWatchdog) clearInterval(orphanWatchdog)
   }
 }

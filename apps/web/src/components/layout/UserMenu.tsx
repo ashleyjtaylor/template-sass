@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
-import { ChevronsUpDown, ExternalLink, Loader2, LogOut } from 'lucide-react'
+import { ChevronsUpDown, CreditCard, KeyRound, LogOut } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,13 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useCreatePortalSession } from '@/modules/billing/api'
-import { useSession, useSignOut } from '@/modules/session/api'
+import { useForgotPassword, useSession, useSignOut } from '@/modules/session/api'
 
 export function UserMenu() {
   const { user } = useSession()
   const signOut = useSignOut()
-  const portal = useCreatePortalSession()
+  const forgot = useForgotPassword()
   const navigate = useNavigate()
 
   if (!user) return null
@@ -33,12 +33,20 @@ export function UserMenu() {
     })
   }
 
-  const handleBilling = () => {
-    portal.mutate(undefined, {
-      onSuccess: (data) => {
-        window.location.href = data.url
+  const handleResetPassword = () => {
+    forgot.mutate(
+      { email: user.email },
+      {
+        onSuccess: () =>
+          toast.success('Reset link sent', {
+            description: `Check ${user.email} for a link to choose a new password.`
+          }),
+        onError: () =>
+          toast.error('Could not send reset link', {
+            description: 'Try again in a few minutes.'
+          })
       }
-    })
+    )
   }
 
   return (
@@ -58,14 +66,15 @@ export function UserMenu() {
           <span className="truncate">{user.email}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={handleBilling} disabled={portal.isPending}>
-          {portal.isPending ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <ExternalLink className="size-3.5" />
-          )}
-          Manage billing
+        <DropdownMenuItem onSelect={() => navigate({ to: '/billing' })}>
+          <CreditCard className="size-3.5" />
+          Billing
         </DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleResetPassword} disabled={forgot.isPending}>
+          <KeyRound className="size-3.5" />
+          Reset password
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleSignOut}>
           <LogOut className="size-3.5" />
           Sign out
