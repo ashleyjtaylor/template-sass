@@ -61,6 +61,13 @@ export async function deleteAccount(input: DeleteAccountInput): Promise<void> {
     }
   }
 
+  // Verification rows (password-reset tokens, future email-verify rows)
+  // have no FK to User — better-auth stores the userId in the `value`
+  // column for reset-password identifiers. Wipe them by hand before
+  // deleting the user so we don't leak orphan rows that survive until
+  // the natural `expiresAt`.
+  await prisma.verification.deleteMany({ where: { value: user.id } })
+
   await prisma.user.delete({ where: { id: user.id } })
 
   if (isMailerConfigured()) {

@@ -42,6 +42,13 @@ const stubStripeClient = ({ cancel }: StubStripeOptions = {}) => {
   return { cancel: cancelFn }
 }
 
+// Verification has no FK on User. The service deletes verification rows
+// for the user by `value` match before calling user.delete to avoid
+// orphaning password-reset tokens. Every happy-path test needs this
+// stub so it doesn't fall through to the real DB.
+const stubVerificationDelete = () =>
+  vi.spyOn(prisma.verification, 'deleteMany').mockResolvedValue({ count: 0 } as never)
+
 beforeEach(() => {
   vi.spyOn(logger, 'error').mockImplementation(() => logger)
   vi.spyOn(logger, 'warn').mockImplementation(() => logger)
@@ -63,6 +70,7 @@ describe('deleteAccount', () => {
       }) as never
     )
     vi.spyOn(prisma.account, 'findFirst').mockResolvedValue({ password: 'hash' } as never)
+    const verificationDelete = stubVerificationDelete()
     const userDelete = vi.spyOn(prisma.user, 'delete').mockResolvedValue({} as never)
     const stripe = stubStripeClient()
     const send = vi.spyOn(mailer, 'sendAccountDeleted').mockResolvedValue(undefined)
@@ -71,6 +79,7 @@ describe('deleteAccount', () => {
     await deleteAccount({ userId: 'user-1', password: 'correct-horse' })
 
     expect(stripe.cancel).toHaveBeenCalledWith('sub_live_123')
+    expect(verificationDelete).toHaveBeenCalledWith({ where: { value: 'user-1' } })
     expect(userDelete).toHaveBeenCalledWith({ where: { id: 'user-1' } })
     expect(send).toHaveBeenCalledWith({ to: 'sam@example.com', firstname: 'Sam' })
   })
@@ -82,6 +91,7 @@ describe('deleteAccount', () => {
 
     vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(userRow() as never)
     vi.spyOn(prisma.account, 'findFirst').mockResolvedValue({ password: 'hash' } as never)
+    stubVerificationDelete()
     const userDelete = vi.spyOn(prisma.user, 'delete').mockResolvedValue({} as never)
     const stripe = stubStripeClient()
     vi.spyOn(mailer, 'sendAccountDeleted').mockResolvedValue(undefined)
@@ -104,6 +114,7 @@ describe('deleteAccount', () => {
       }) as never
     )
     vi.spyOn(prisma.account, 'findFirst').mockResolvedValue({ password: 'hash' } as never)
+    stubVerificationDelete()
     vi.spyOn(prisma.user, 'delete').mockResolvedValue({} as never)
     const stripe = stubStripeClient()
     vi.spyOn(mailer, 'sendAccountDeleted').mockResolvedValue(undefined)
@@ -125,6 +136,7 @@ describe('deleteAccount', () => {
       }) as never
     )
     vi.spyOn(prisma.account, 'findFirst').mockResolvedValue({ password: 'hash' } as never)
+    stubVerificationDelete()
     const userDelete = vi.spyOn(prisma.user, 'delete').mockResolvedValue({} as never)
     const stripe = stubStripeClient({
       cancel: vi.fn().mockRejectedValue(new Error('stripe is down'))
