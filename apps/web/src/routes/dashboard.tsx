@@ -1,17 +1,40 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
+import { toast } from 'sonner'
+import { z } from 'zod'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccessState } from '@/modules/billing/api'
 import { PLANS, PlanCard } from '@/modules/billing/plans'
 import { useSession } from '@/modules/session/api'
+import { VerifyEmailBanner } from '@/modules/session/VerifyEmailBanner'
+
+const searchSchema = z.object({
+  verified: z.string().optional()
+})
 
 export const Route = createFileRoute('/dashboard')({
+  validateSearch: searchSchema,
   component: DashboardPage
 })
 
 function DashboardPage() {
   const { user } = useSession()
   const access = useAccessState()
+  const navigate = useNavigate()
+  const search = Route.useSearch()
   const firstname = user?.name.split(' ')[0] ?? 'there'
+
+  // `?verified=1` is set by better-auth's GET /api/auth/verify-email
+  // redirect (configured via the resend's `callbackURL`). Fire the toast
+  // exactly once, then strip the param so a refresh doesn't re-toast.
+  useEffect(() => {
+    if (search.verified !== '1') return
+
+    toast.success('Email verified', {
+      description: 'Thanks — your email address is confirmed.'
+    })
+    navigate({ to: '/dashboard', search: {}, replace: true })
+  }, [search.verified, navigate])
 
   if (access.isLoading) {
     return (
@@ -26,6 +49,7 @@ function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
+      <VerifyEmailBanner />
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Dashboard</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Welcome, {firstname}</h1>

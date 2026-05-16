@@ -1,12 +1,8 @@
 name: e2e
 
-# Auto-triggers paused. The signup-paywall spec needs working Stripe
-# test secrets (STRIPE_TEST_API_KEY, STRIPE_TEST_PRICE_ID_PRO) wired
-# into repo Actions secrets before the suite is reliable on push/PR.
-# Re-add `push:` and `pull_request:` triggers under `on:` once the
-# secrets are in place. Until then this workflow only runs from the
-# Actions UI ("Run workflow" button).
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -60,8 +56,8 @@ jobs:
       MAIL_FROM: noreply@localhost
       MAIL_SMTP_HOST: localhost
       MAIL_SMTP_PORT: 1025
-      STRIPE_API_KEY: ${{ secrets.STRIPE_TEST_API_KEY }}
-      STRIPE_PRICE_ID_PRO: ${{ secrets.STRIPE_TEST_PRICE_ID_PRO }}
+      STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+      STRIPE_PRICE_ID_PRO: ${{ secrets.STRIPE_PRICE_ID_PRO }}
       STRIPE_PORTAL_RETURN_URL: http://localhost:5174
     steps:
       - uses: actions/checkout@v6.0.2

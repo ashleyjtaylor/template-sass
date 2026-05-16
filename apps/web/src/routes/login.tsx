@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowRight, Loader2 } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import { AuthCardLayout, AuthField } from '@/components/layout/AuthCardLayout'
 import { Button } from '@/components/ui/button'
@@ -9,7 +10,8 @@ import { safeRedirect } from '@/lib/redirect'
 import { useSignIn } from '@/modules/session/api'
 
 const searchSchema = z.object({
-  redirect: z.string().optional()
+  redirect: z.string().optional(),
+  verified: z.string().optional()
 })
 
 export const Route = createFileRoute('/login')({
@@ -32,6 +34,23 @@ function LoginPage() {
   const signIn = useSignIn()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  // `?verified=1` lands here when the verify link was clicked on a device
+  // without an active session — better-auth's GET /verify-email redirect
+  // fires regardless of auth state. Show the same success toast as
+  // /dashboard, strip the param so a refresh doesn't re-toast.
+  useEffect(() => {
+    if (search.verified !== '1') return
+
+    toast.success('Email verified', {
+      description: 'Sign in to continue.'
+    })
+    navigate({
+      to: '/login',
+      search: { ...search, verified: undefined },
+      replace: true
+    })
+  }, [search, navigate])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()

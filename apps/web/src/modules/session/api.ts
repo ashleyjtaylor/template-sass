@@ -58,7 +58,15 @@ export const useSignUp = () => {
     mutationFn: (input: SignUpInput) =>
       api('/api/auth/sign-up/email', z.unknown(), {
         method: 'POST',
-        body: { ...input, name: `${input.firstname} ${input.lastname}`.trim() }
+        // callbackURL is the post-verify redirect target embedded in the
+        // verification email better-auth sends from this signup. Without
+        // it the link redirects to better-auth's own baseURL (the API
+        // origin) — landing the user on :3000 instead of the SPA.
+        body: {
+          ...input,
+          name: `${input.firstname} ${input.lastname}`.trim(),
+          callbackURL: `${window.location.origin}/dashboard?verified=1`
+        }
       }),
     onSuccess: () => invalidateAfterAuth(queryClient)
   })
@@ -101,5 +109,22 @@ export const useResetPassword = () =>
       api('/api/auth/reset-password', z.unknown(), {
         method: 'POST',
         body: { token: input.token, newPassword: input.newPassword }
+      })
+  })
+
+export interface ResendVerificationInput {
+  email: string
+}
+
+export const useResendVerification = () =>
+  useMutation({
+    mutationFn: (input: ResendVerificationInput) =>
+      api('/api/auth/send-verification-email', z.unknown(), {
+        method: 'POST',
+        // callbackURL is where better-auth redirects after the GET
+        // /verify-email handler flips emailVerified=true. The ?verified=1
+        // search param is read by /dashboard (and /login, in the
+        // signed-out clicker case) to fire a success toast.
+        body: { email: input.email, callbackURL: `${window.location.origin}/dashboard?verified=1` }
       })
   })
