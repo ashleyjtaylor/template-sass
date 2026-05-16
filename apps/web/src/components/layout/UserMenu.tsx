@@ -1,6 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { ChevronsUpDown, CreditCard, KeyRound, LogOut } from 'lucide-react'
-import { toast } from 'sonner'
+import { ChevronsUpDown, CreditCard, LogOut, UserCog } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,12 +8,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useForgotPassword, useSession, useSignOut } from '@/modules/session/api'
+import { useSession, useSignOut } from '@/modules/session/api'
 
 export function UserMenu() {
   const { user } = useSession()
   const signOut = useSignOut()
-  const forgot = useForgotPassword()
   const navigate = useNavigate()
 
   if (!user) return null
@@ -31,22 +29,6 @@ export function UserMenu() {
     signOut.mutate(undefined, {
       onSettled: () => navigate({ to: '/login' })
     })
-  }
-
-  const handleResetPassword = () => {
-    forgot.mutate(
-      { email: user.email },
-      {
-        onSuccess: () =>
-          toast.success('Reset link sent', {
-            description: `Check ${user.email} for a link to choose a new password.`
-          }),
-        onError: () =>
-          toast.error('Could not send reset link', {
-            description: 'Try again in a few minutes.'
-          })
-      }
-    )
   }
 
   return (
@@ -70,9 +52,9 @@ export function UserMenu() {
           <CreditCard className="size-3.5" />
           Billing
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={handleResetPassword} disabled={forgot.isPending}>
-          <KeyRound className="size-3.5" />
-          Reset password
+        <DropdownMenuItem onSelect={() => navigate({ to: '/account' })}>
+          <UserCog className="size-3.5" />
+          Account
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleSignOut}>

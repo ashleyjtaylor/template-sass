@@ -9,6 +9,7 @@ import { errorHandler } from '@/middleware/error-handler.js'
 import { healthReady } from '@/middleware/health-ready.js'
 import { requestId } from '@/middleware/request-id.js'
 import { requestLogger } from '@/middleware/request-logger.js'
+import { accountRoutes } from '@/modules/account/routes.js'
 import { billingRoutes } from '@/modules/billing/routes.js'
 import { stripeWebhookRoutes } from '@/modules/webhooks/stripe.js'
 
@@ -48,6 +49,7 @@ export function createApp({
 
   app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 
+  app.route('/api/account', accountRoutes)
   app.route('/api/billing', billingRoutes)
   app.route('/api/webhooks', stripeWebhookRoutes)
 
