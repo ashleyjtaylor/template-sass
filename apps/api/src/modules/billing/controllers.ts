@@ -1,5 +1,5 @@
-import { isBillingConfigured } from '@template/billing'
-import { InternalError } from '@template/errors'
+import { isBillingConfigured } from '@template-sass/billing'
+import { InternalError } from '@template-sass/errors'
 import type { AuthSession } from '@/middleware/require-session.js'
 import { buildCheckoutSession, buildPortalSession, readAccessState } from './service.js'
 

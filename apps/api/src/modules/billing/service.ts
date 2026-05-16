@@ -2,9 +2,9 @@ import {
   createCheckoutSession as createStripeCheckout,
   createPortalSession as createStripePortal,
   getUserAccessState
-} from '@template/billing'
-import { prisma } from '@template/db'
-import { ConflictError, NotFoundError } from '@template/errors'
+} from '@template-sass/billing'
+import { prisma } from '@template-sass/db'
+import { ConflictError, NotFoundError } from '@template-sass/errors'
 import { env } from '@/env.js'
 
 const webBaseUrl = () => env.WEB_BASE_URL.replace(/\/$/, '')

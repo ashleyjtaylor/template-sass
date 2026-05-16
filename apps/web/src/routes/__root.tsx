@@ -45,10 +45,21 @@ function RootRoute() {
   const isUnauthedOnly = UNAUTHED_ONLY_PATHS.has(pathname)
   const isPublic = PUBLIC_PATHS.has(pathname)
   const hidesShell = SHELL_HIDDEN_PATHS.has(pathname)
+  // /signup?plan=… is a transient checkout-in-progress state: the page
+  // is firing window.location.href to Stripe right now. If AuthGate sees
+  // the new session and bounces to /dashboard first, the user lands on
+  // the paywalled gate instead of Stripe. Suppress the bounce until the
+  // page completes its hard navigation.
+  const isMidCheckout = pathname === '/signup' && typeof search['plan'] === 'string'
 
   return (
     <>
-      <AuthGate isUnauthedOnly={isUnauthedOnly} isPublic={isPublic} search={search}>
+      <AuthGate
+        isUnauthedOnly={isUnauthedOnly}
+        isPublic={isPublic}
+        isMidCheckout={isMidCheckout}
+        search={search}
+      >
         {hidesShell ? (
           <Outlet />
         ) : (
@@ -68,11 +79,12 @@ function RootRoute() {
 interface AuthGateProps {
   isUnauthedOnly: boolean
   isPublic: boolean
+  isMidCheckout: boolean
   search: Record<string, unknown>
   children: ReactNode
 }
 
-function AuthGate({ isUnauthedOnly, isPublic, search, children }: AuthGateProps) {
+function AuthGate({ isUnauthedOnly, isPublic, isMidCheckout, search, children }: AuthGateProps) {
   const navigate = useNavigate()
   const { isAuthed, isLoading } = useSession()
 
@@ -84,16 +96,16 @@ function AuthGate({ isUnauthedOnly, isPublic, search, children }: AuthGateProps)
       return
     }
 
-    if (isAuthed && isUnauthedOnly) {
+    if (isAuthed && isUnauthedOnly && !isMidCheckout) {
       const target = typeof search['redirect'] === 'string' ? search['redirect'] : undefined
 
       navigate({ to: safeRedirect(target) })
     }
-  }, [isAuthed, isLoading, isUnauthedOnly, isPublic, search, navigate])
+  }, [isAuthed, isLoading, isUnauthedOnly, isPublic, isMidCheckout, search, navigate])
 
   if (isLoading) return null
   if (!isAuthed && !isUnauthedOnly && !isPublic) return null
-  if (isAuthed && isUnauthedOnly) return null
+  if (isAuthed && isUnauthedOnly && !isMidCheckout) return null
 
   return children
 }

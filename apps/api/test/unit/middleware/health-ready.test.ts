@@ -1,4 +1,4 @@
-import { prisma } from '@template/db'
+import { prisma } from '@template-sass/db'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/app.js'
 

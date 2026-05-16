@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -14,6 +14,9 @@
       "!**/.turbo",
       "!**/.next",
       "!**/coverage",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!**/.claude",
       "!pnpm-lock.yaml",
       "!**/routeTree.gen.ts"
     ]
@@ -29,11 +32,26 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "complexity": {
+        "useLiteralKeys": "off"
+      },
       "suspicious": {
         "noConsole": "warn"
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["e2e/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "single",

@@ -1,4 +1,4 @@
-import { prisma } from '@template/db'
+import { prisma } from '@template-sass/db'
 import type { AccessStateResult, SubscriptionStatus } from './types.js'
 
 // Single resolver for user-level paywall logic. Reads the `subscription`

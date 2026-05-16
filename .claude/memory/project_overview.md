@@ -164,7 +164,7 @@ Integration tests (DB-backed) were removed during the strip-down — re-add when
 ```
 docker compose up postgres   # local Postgres on :5432
 pnpm install
-pnpm --filter @template/db exec prisma migrate dev   # first time only
+pnpm --filter @template-sass/db exec prisma migrate dev   # first time only
 pnpm dev   # turbo: api on :3000, web on :5174
 ```
 

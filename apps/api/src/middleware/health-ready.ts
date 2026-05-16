@@ -1,4 +1,4 @@
-import { prisma } from '@template/db'
+import { prisma } from '@template-sass/db'
 import type { Handler } from 'hono'
 import { logger } from '@/lib/logger.js'
 

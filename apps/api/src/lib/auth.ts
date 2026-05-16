@@ -1,5 +1,5 @@
-import { prisma } from '@template/db'
-import { isMailerConfigured, sendPasswordReset } from '@template/mailer'
+import { prisma } from '@template-sass/db'
+import { isMailerConfigured, sendPasswordReset } from '@template-sass/mailer'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
@@ -80,8 +80,13 @@ export const auth = betterAuth({
   // Per-IP global rate limit on /request-password-reset (memory-backed,
   // fine for a single API task). Per-email throttling is enforced in
   // the `before` hook below.
+  //
+  // Disabled outside production: better-auth's defaults are aggressive
+  // (sign-up/sign-in: max 3 per 10s per IP) and hit local dev + e2e
+  // suite hard since everything originates from 127.0.0.1. Production
+  // reinstates them — abuse pressure is real there.
   rateLimit: {
-    enabled: true,
+    enabled: env.NODE_ENV === 'production',
     storage: 'memory',
     customRules: {
       '/request-password-reset': { window: 3600, max: 10 }

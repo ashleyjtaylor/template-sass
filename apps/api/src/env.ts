@@ -49,5 +49,5 @@ const schema = z.object({
 
 // DB_* env vars and the DATABASE_URL composition live in packages/db. Apps
 // just need to set DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME in
-// process.env; `@template/db` reads them and composes the URL.
+// process.env; `@template-sass/db` reads them and composes the URL.
 export const env = schema.parse(process.env)

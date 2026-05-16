@@ -123,7 +123,7 @@ The composite route's body is `.strict()` so unknown fields like `inviteToken` a
 
 There is no public route to set `staffRole` (the `input: false` on `additionalFields` blocks the auth API). The `bootstrap-staff` script is the **only** path that promotes a user to staff:
 
-- **Local**: `pnpm --filter @template/api bootstrap:staff --email=… --name="…" --password=… --role=admin`.
+- **Local**: `pnpm --filter @template-sass/api bootstrap:staff --email=… --name="…" --password=… --role=admin`.
 - **Staging / production**: `.github/workflows/bootstrap-staff.yml` (`workflow_dispatch` only) runs `aws ecs run-task` against the `template-${env}-bootstrap` Fargate task definition with the four `BOOTSTRAP_STAFF_*` inputs as **runtime env overrides**. Bootstrap creds appear at trigger time only — no long-lived env vars on the task definition or in Secrets Manager.
 
 The script (`apps/api/src/scripts/bootstrap-staff.ts`) is idempotent: it creates the user via `auth.api.signUpEmail` if missing (so the password is hashed by better-auth and the `user.signed_up` audit event fires), then sets `staffRole` via a direct `prisma.user.update`. Re-running with the same role is a no-op; with a different role it updates `staffRole` only — never the password.

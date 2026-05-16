@@ -30,6 +30,12 @@ export async function createCheckoutSession(
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
+    // Card-only Checkout. Without this, Stripe surfaces every payment
+    // method enabled at the account level (Klarna, Revolut Pay, Amazon
+    // Pay, Link, etc.) behind an accordion. Card-only is the standard
+    // SaaS default and keeps the e2e flow deterministic. Forks that
+    // want multi-method checkout can remove this line.
+    payment_method_types: ['card'],
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,

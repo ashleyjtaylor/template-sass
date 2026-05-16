@@ -4,7 +4,6 @@ export type EnvName = 'staging' | 'production'
 
 export const PRODUCT = 'template'
 
-// biome-ignore lint/complexity/useLiteralKeys: tsconfig's noPropertyAccessFromIndexSignature requires bracket access on index-signature types
 const account = process.env['CDK_DEFAULT_ACCOUNT']
 
 // Region must match aws-region in .github/workflows/deploy-*.yml

@@ -1,4 +1,4 @@
-import { NotFoundError } from '@template/errors'
+import { NotFoundError } from '@template-sass/errors'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/app.js'
 import { logger } from '@/lib/logger.js'

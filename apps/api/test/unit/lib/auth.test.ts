@@ -1,4 +1,4 @@
-import * as mailer from '@template/mailer'
+import * as mailer from '@template-sass/mailer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 afterEach(() => {

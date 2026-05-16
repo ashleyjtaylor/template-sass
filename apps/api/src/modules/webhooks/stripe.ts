@@ -1,5 +1,5 @@
-import { billingEnv, getStripeClient } from '@template/billing'
-import { prisma } from '@template/db'
+import { billingEnv, getStripeClient } from '@template-sass/billing'
+import { prisma } from '@template-sass/db'
 import { Hono } from 'hono'
 import type Stripe from 'stripe'
 import { logger } from '@/lib/logger.js'

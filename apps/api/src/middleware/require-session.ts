@@ -1,4 +1,4 @@
-import { UnauthorizedError } from '@template/errors'
+import { UnauthorizedError } from '@template-sass/errors'
 import { createMiddleware } from 'hono/factory'
 import { auth } from '@/lib/auth.js'
 

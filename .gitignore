@@ -13,6 +13,8 @@ infra/cdk/cdk.context.json
 # Test artifacts
 coverage
 *.lcov
+playwright-report
+test-results
 
 # Env files
 .env

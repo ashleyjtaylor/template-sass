@@ -47,8 +47,8 @@ Shared domain types live in `packages/types`. Validation schemas (Zod) live in `
 
 Type-only imports use `import type` (required by `verbatimModuleSyntax` in `tsconfig.base.json`):
 ```ts
-import type { User } from '@template/types'
-import { signAccessToken } from '@template/auth'
+import type { User } from '@template-sass/types'
+import { signAccessToken } from '@template-sass/auth'
 ```
 
 Prefer `unknown` over `any`. If you reach for `any`, narrow it at the boundary instead.

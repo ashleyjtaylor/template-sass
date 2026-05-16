@@ -1,4 +1,4 @@
-import { formatError, HttpError } from '@template/errors'
+import { formatError, HttpError } from '@template-sass/errors'
 import type { ErrorHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'

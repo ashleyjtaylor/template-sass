@@ -1,5 +1,5 @@
 {
-  "name": "@template/billing",
+  "name": "@template-sass/billing",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -23,8 +23,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@template/db": "workspace:*",
-    "@template/errors": "workspace:*",
+    "@template-sass/db": "workspace:*",
+    "@template-sass/errors": "workspace:*",
     "stripe": "22.1.1",
     "zod": "4.4.3"
   },

@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server'
-import { prisma } from '@template/db'
+import { prisma } from '@template-sass/db'
 import { createApp } from '@/app.js'
 import { env } from '@/env.js'
 import { logger } from '@/lib/logger.js'

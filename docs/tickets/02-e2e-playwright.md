@@ -10,7 +10,7 @@ Plan agreed before implementation. Captures intent so future readers can compare
 
 ```
 e2e/
-  package.json              # @template/e2e workspace, deps: @playwright/test, @template/db
+  package.json              # @template-sass/e2e workspace, deps: @playwright/test, @template-sass/db
   tsconfig.json
   playwright.config.ts      # webServer + chromium + retries=2 in CI
   fixtures/
@@ -60,7 +60,7 @@ e2e/
 ## DB isolation
 
 - `beforeEach` calls `truncateAll()` from `fixtures/db.ts`: `TRUNCATE user, session, account, verification, subscription, "StripeEvent" RESTART IDENTITY CASCADE`.
-- Uses Prisma client from `@template/db`. Closed in `afterAll` to avoid pool exhaustion.
+- Uses Prisma client from `@template-sass/db`. Closed in `afterAll` to avoid pool exhaustion.
 - Tests serialize within a worker (Playwright's default for tests sharing state); single worker for the smoke suite.
 
 ## Server lifecycle
@@ -117,7 +117,7 @@ jobs:
       - install Stripe CLI: curl -sL … | tar; sudo mv stripe /usr/local/bin
       - start `stripe listen --api-key $STRIPE_API_KEY --forward-to localhost:3000/api/webhooks/stripe --print-secret > /tmp/whsec` (background)
         export STRIPE_WEBHOOK_SECRET=$(head -n1 /tmp/whsec)
-      - pnpm --filter @template/e2e test:e2e   # webServer config boots api+web
+      - pnpm --filter @template-sass/e2e test:e2e   # webServer config boots api+web
       - upload-artifact: e2e/playwright-report (always, retention 14d)
 ```
 

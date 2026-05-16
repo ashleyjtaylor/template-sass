@@ -2,6 +2,7 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'infra/*'
+  - 'e2e'
 
 # Allow these packages' postinstall scripts to run (pnpm 11 replaced
 # `onlyBuiltDependencies` with `allowBuilds`). esbuild downloads its native

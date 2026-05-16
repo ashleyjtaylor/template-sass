@@ -21,7 +21,7 @@ COPY packages/billing/package.json packages/billing/
 # --ignore-scripts skips lefthook + prisma generate (the latter needs schema
 # files not yet copied in this layer). We invoke prisma generate explicitly
 # in the build stage once schema files are on disk.
-RUN pnpm install --frozen-lockfile --filter @template/api... --ignore-scripts
+RUN pnpm install --frozen-lockfile --filter @template-sass/api... --ignore-scripts
 
 FROM deps AS build
 COPY tsconfig.base.json ./
@@ -32,18 +32,18 @@ COPY apps/api ./apps/api
 # Generate the Prisma Client. Workspace deps are symlinks (default pnpm
 # behaviour), so the generated client lives at packages/db/node_modules/...
 # and resolves through the symlink chain from apps/api at runtime.
-RUN pnpm --filter @template/db exec prisma generate
+RUN pnpm --filter @template-sass/db exec prisma generate
 # Build workspace packages then the app, in dependency order.
-RUN pnpm --filter @template/errors build
-RUN pnpm --filter @template/db build
-RUN pnpm --filter @template/billing build
-RUN pnpm --filter @template/api build
+RUN pnpm --filter @template-sass/errors build
+RUN pnpm --filter @template-sass/db build
+RUN pnpm --filter @template-sass/billing build
+RUN pnpm --filter @template-sass/api build
 # Strip devDependencies in place. --frozen-lockfile + --prod keeps the
 # lockfile honest; the symlink chain to workspace packages survives.
 # `CI=true` skips pnpm's interactive prompt before purging node_modules
 # (the prod-only install replaces the dev+prod node_modules from the deps
 # stage); without it pnpm aborts with ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY.
-RUN CI=true pnpm install --frozen-lockfile --filter @template/api... --prod --ignore-scripts
+RUN CI=true pnpm install --frozen-lockfile --filter @template-sass/api... --prod --ignore-scripts
 
 FROM node:24.15.0-bookworm-slim AS runner
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -53,8 +53,8 @@ ENV NODE_ENV=production \
     PORT=3000 \
     GIT_SHA=$GIT_SHA
 # Copy the built, prod-only workspace from the build stage. Symlinks survive
-# the COPY (Docker preserves them). apps/api's runtime resolves @template/*
-# via apps/api/node_modules/@template/* → ../../packages/*.
+# the COPY (Docker preserves them). apps/api's runtime resolves @template-sass/*
+# via apps/api/node_modules/@template-sass/* → ../../packages/*.
 COPY --from=build --chown=node:node /repo /app
 USER node
 EXPOSE 3000

@@ -104,7 +104,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build web app
-        run: pnpm --filter @template/web build
+        run: pnpm --filter @template-sass/web build
 
       - uses: actions/upload-artifact@v7.0.1
         with:

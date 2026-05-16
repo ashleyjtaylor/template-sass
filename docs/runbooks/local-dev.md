@@ -21,8 +21,8 @@ cp apps/api/.env.example apps/api/.env
 Apply Prisma migrations to **both** local databases:
 
 ```bash
-pnpm --filter @template/db exec prisma migrate deploy
-DB_NAME=template_test pnpm --filter @template/db exec prisma migrate deploy
+pnpm --filter @template-sass/db exec prisma migrate deploy
+DB_NAME=template_test pnpm --filter @template-sass/db exec prisma migrate deploy
 ```
 
 After this, `pnpm dev` and `pnpm test` both work.
@@ -99,12 +99,12 @@ Runs unit tests across every workspace package. Tests use `template_test` (per e
 1. Edit `packages/db/prisma/schema.prisma` with the new model / column / index.
 2. Generate the migration **against the dev database**:
    ```bash
-   pnpm --filter @template/db exec prisma migrate dev --name <kebab-slug>
+   pnpm --filter @template-sass/db exec prisma migrate dev --name <kebab-slug>
    ```
 3. Inspect the generated SQL before committing.
 4. Apply the same migration to the test database:
    ```bash
-   DB_NAME=template_test pnpm --filter @template/db exec prisma migrate deploy
+   DB_NAME=template_test pnpm --filter @template-sass/db exec prisma migrate deploy
    ```
 5. Commit the new migration directory plus the schema change.
 

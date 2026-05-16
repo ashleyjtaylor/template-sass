@@ -16,6 +16,8 @@
     "format": "biome format --write",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:e2e": "pnpm --filter @template-sass/e2e test:e2e",
+    "e2e:stripe-listen": "stripe listen --forward-to http://localhost:3000/api/webhooks/stripe",
     "prepare": "lefthook install"
   },
   "devDependencies": {

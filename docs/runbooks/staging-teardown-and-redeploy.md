@@ -7,7 +7,7 @@ When you don't need staging running, tear it down to stop the ~$56/mo of NAT + A
 From a shell with AWS credentials configured:
 
 ```bash
-pnpm --filter @template/cdk exec cdk destroy "template-staging-*"
+pnpm --filter @template-sass/cdk exec cdk destroy "template-staging-*"
 ```
 
 CDK destroys in dependency order: app → data → network. Confirm the prompt for each stack (or pass `--force`).

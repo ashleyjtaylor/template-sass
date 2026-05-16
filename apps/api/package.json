@@ -1,5 +1,5 @@
 {
-  "name": "@template/api",
+  "name": "@template-sass/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "@hono/node-server": "2.0.1",
-    "@template/billing": "workspace:*",
-    "@template/db": "workspace:*",
-    "@template/errors": "workspace:*",
-    "@template/mailer": "workspace:*",
+    "@template-sass/billing": "workspace:*",
+    "@template-sass/db": "workspace:*",
+    "@template-sass/errors": "workspace:*",
+    "@template-sass/mailer": "workspace:*",
     "better-auth": "1.6.9",
     "hono": "4.12.18",
     "pino": "10.3.1",

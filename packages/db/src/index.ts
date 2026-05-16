@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { env } from './env.js'
 
 // Re-export everything @prisma/client exposes (entity types, Prisma namespace,
-// error classes) so consumers depend only on @template/db.
+// error classes) so consumers depend only on @template-sass/db.
 export * from '@prisma/client'
 
 // Stash the client on globalThis in non-production so hot-reload tools
