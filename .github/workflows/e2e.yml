@@ -98,6 +98,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/template_test
 
+      # apps/api is launched by Playwright via `tsx watch src/index.ts`,
+      # which imports workspace packages whose package.json points
+      # `exports.import` at `./dist/index.js`. CI has no built dist on a
+      # fresh checkout, so the api boot crashes with ERR_MODULE_NOT_FOUND
+      # without this step. Turbo caches build outputs, so reruns are fast.
+      - name: Build workspace packages
+        run: pnpm build
+
       - name: Install Stripe CLI
         run: |
           curl -fsSL https://github.com/stripe/stripe-cli/releases/download/v1.21.8/stripe_1.21.8_linux_x86_64.tar.gz \
