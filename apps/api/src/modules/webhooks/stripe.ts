@@ -1,4 +1,4 @@
-import { billingEnv, getStripeClient } from '@template-sass/billing'
+import { billingEnv, getStripeClient, planKeyForPriceId } from '@template-sass/billing'
 import { prisma } from '@template-sass/db'
 import { Hono } from 'hono'
 import type Stripe from 'stripe'
@@ -149,7 +149,13 @@ async function upsertSubscription(sub: Stripe.Subscription): Promise<void> {
     return
   }
 
+  // Primary: reverse-map the price id against PLAN_PRICE_IDS so a
+  // Customer-Portal plan switch (which fires `customer.subscription.updated`
+  // with the new `price.id` but doesn't expand `price.product`) updates
+  // the mirror correctly. Falls through to the historical paths so
+  // unconfigured forks and signup-time events still resolve a sensible key.
   const planKey =
+    planKeyForPriceId(item.price.id) ??
     (typeof item.price.product === 'object' &&
     item.price.product &&
     'metadata' in item.price.product
