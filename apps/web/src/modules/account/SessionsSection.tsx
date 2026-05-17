@@ -102,20 +102,17 @@ function SessionRow({ session, isCurrent, onRevoke, revokePending }: SessionRowP
     <div className="flex items-center gap-3 px-4 py-3">
       <Monitor className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium">{device}</span>
-          {isCurrent && (
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase text-emerald-600 dark:text-emerald-400">
-              This device
-            </span>
-          )}
-        </div>
+        <span className="block truncate text-sm font-medium">{device}</span>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {session.ipAddress ? `${session.ipAddress} · ` : ''}
           {isCurrent ? 'Active now' : lastActive}
         </p>
       </div>
-      {!isCurrent && (
+      {isCurrent ? (
+        <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase text-emerald-600 dark:text-emerald-400">
+          This device
+        </span>
+      ) : (
         <Button
           variant="ghost"
           size="sm"
