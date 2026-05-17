@@ -1,10 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from '@/components/ui/accordion'
 import { useAccountMethods } from '@/modules/account/api'
 import { DeleteAccountSection } from '@/modules/account/DeleteAccountSection'
 import { PasswordSection } from '@/modules/account/PasswordSection'
@@ -25,25 +19,10 @@ function SecurityTab() {
   // doesn't flash off-then-on for the common email+password case.
   const hasPassword = methods.data?.hasPassword ?? true
 
-  // `type='multiple'` lets the user open more than one section at a
-  // time — useful when reviewing sessions while also drafting a
-  // password change. All collapsed by default; the user opens what
-  // they need.
   return (
     <div className="space-y-6">
-      {hasPassword && (
-        <Accordion type="multiple">
-          <AccordionItem value="password">
-            <AccordionTrigger>Password</AccordionTrigger>
-            <AccordionContent>
-              <PasswordSection email={user.email} />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
-
+      {hasPassword && <PasswordSection email={user.email} />}
       <SessionsSection />
-
       <DeleteAccountSection email={user.email} hasPassword={hasPassword} />
     </div>
   )

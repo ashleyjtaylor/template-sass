@@ -98,12 +98,10 @@ export function PasswordSection({ email }: PasswordSectionProps) {
       ? errorMessageFor(change.error)
       : null
 
-  // Renders inside an AccordionContent on /account/security — own
-  // wrapper + heading live on the accordion shell, so this component
-  // only owns the description + form body.
   return (
-    <div>
-      <p className="max-w-xl text-sm text-muted-foreground">
+    <section className="rounded-lg border bg-card p-6">
+      <h2 className="text-lg font-semibold">Password</h2>
+      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Change your password here. Updating it signs you out of every other device.
       </p>
 
@@ -162,6 +160,6 @@ export function PasswordSection({ email }: PasswordSectionProps) {
         </button>
         .
       </p>
-    </div>
+    </section>
   )
 }
