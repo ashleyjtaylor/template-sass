@@ -1,6 +1,11 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { accessStateSchema, sessionUrlSchema } from './schemas'
+import {
+  accessStateSchema,
+  changePlanResultSchema,
+  previewPlanChangeSchema,
+  sessionUrlSchema
+} from './schemas'
 
 const ACCESS_STATE_KEY = ['access-state'] as const
 
@@ -35,3 +40,36 @@ export const useCreatePortalSession = () =>
         body: {}
       })
   })
+
+export const usePreviewPlanChange = () =>
+  useMutation({
+    mutationFn: (input: { plan: string }) =>
+      api('/api/billing/change-plan/preview', previewPlanChangeSchema, {
+        method: 'POST',
+        body: input
+      })
+  })
+
+export interface ChangePlanInput {
+  plan: string
+  // Forwarded from the preview call so the actual charge matches the
+  // amount the user was shown. Omit for "charge what Stripe computes now".
+  prorationDateUnix?: number
+}
+
+export const useChangePlan = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: ChangePlanInput) =>
+      api('/api/billing/change-plan', changePlanResultSchema, {
+        method: 'POST',
+        body: input
+      }),
+    // The webhook updates the mirror within ~1s of Stripe firing the
+    // event, but invalidating the access-state cache here makes the
+    // SubscriptionCard re-render the new planKey on the very next
+    // refetch — no manual reload.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ACCESS_STATE_KEY })
+  })
+}

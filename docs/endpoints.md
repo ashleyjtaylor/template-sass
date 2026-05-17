@@ -52,6 +52,8 @@ The billing routes are fork-opt-in: until `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECR
 | `/api/billing/checkout-session` | POST | session | Body: `{ plan: string }` (`'pro'` or `'max'`). Maps to a Stripe price id via `PLAN_PRICE_IDS` in `packages/billing/src/env.ts`. Response: `{ url }`. **409** `AlreadySubscribed` if the user already has an active / trialing / past_due subscription. |
 | `/api/billing/portal-session` | POST | session | Mint a Stripe Customer Portal session. Response: `{ url }`. **409** `NoStripeCustomer` if the user has never completed a Checkout. |
 | `/api/billing/access-state` | GET | session | Returns `{ state: 'paid' \| 'past_due' \| 'paywalled', subscription?: { planKey, status, currentPeriodEnd, cancelAtPeriodEnd } }`. Used by the `/dashboard` route to render the paywall vs the product. |
+| `/api/billing/change-plan/preview` | POST | session | Body: `{ plan: string }`. Pure read — quotes the prorated charge for switching to `plan` via `stripe.invoices.createPreview`. Response: `{ amountDueCents, currency, prorationDateUnix }`. **409** `NoActiveSubscription` if the user has no active/trialing sub; **409** `InvalidPlanChange` if `plan` matches the current plan; **422** `UnsupportedPlan` if `plan` is not in `PLAN_PRICE_IDS`. |
+| `/api/billing/change-plan` | POST | session | Body: `{ plan: string, prorationDateUnix?: number }`. Executes the switch via `stripe.subscriptions.update` with `proration_behavior: 'create_prorations'`. Pass `prorationDateUnix` from the preview call so the actual charge matches the quote. Response: `{ status: 'ok' }`. The mirror updates asynchronously via the `customer.subscription.updated` webhook. Same error classes as the preview route. |
 
 ## `/api/webhooks/stripe`
 

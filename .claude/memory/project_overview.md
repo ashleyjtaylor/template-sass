@@ -103,7 +103,8 @@ CORS: explicit allowlist of frontend origins via `CORS_ORIGINS` env var.
 ## Billing
 
 - **Stripe Checkout** for new subscriptions. `packages/billing/src/checkout.ts` maps `plan` → price id via `PLAN_PRICE_IDS` in `env.ts`, then creates a Checkout Session with `metadata.userEntityId` so the webhook can resolve the user
-- **Stripe Customer Portal** for self-service (change card, cancel, view invoices)
+- **In-app upgrades** (Pro → Max today). `/billing` SubscriptionCard offers an "Upgrade" CTA that opens a modal showing the prorated charge (`/api/billing/change-plan/preview`) and confirms via `/api/billing/change-plan`. Backed by `packages/billing/src/upgrade.ts` (`previewPlanChange` + `changeSubscriptionPlan`); the webhook's `customer.subscription.updated` handler mirrors the new plan via `planKeyForPriceId`
+- **Stripe Customer Portal** for everything else — change card, view invoices, downgrade, cancel. Configure the Portal to list only Pro in its "Subscription updates → Products" so upgrades go through the in-app flow and only downgrades surface there (see [`docs/runbooks/in-app-upgrades.md`](../../docs/runbooks/in-app-upgrades.md))
 - **`getUserAccessState(userId)`** is the single resolver: returns `paid` for active/trialing, `past_due` while Stripe Smart-Retries, `paywalled` otherwise
 - **Webhook**: handles `checkout.session.completed` (sets `User.stripeCustomerId`), `customer.subscription.created/updated` (upserts the mirror), `customer.subscription.deleted` (marks canceled). Everything inline — no worker, no queue
 - **`isBillingConfigured()`**: returns false until `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO`, and `STRIPE_PRICE_ID_MAX` are all set. Until then `/api/billing/*` 503s with a clear `BillingNotConfigured` reason

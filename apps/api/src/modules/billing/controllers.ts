@@ -1,7 +1,13 @@
 import { isBillingConfigured } from '@template-sass/billing'
 import { InternalError } from '@template-sass/errors'
 import type { AuthSession } from '@/middleware/require-session.js'
-import { buildCheckoutSession, buildPortalSession, readAccessState } from './service.js'
+import {
+  buildCheckoutSession,
+  buildPortalSession,
+  executeUpgrade,
+  previewUpgrade,
+  readAccessState
+} from './service.js'
 
 const requireBillingConfigured = () => {
   if (!isBillingConfigured()) {
@@ -35,3 +41,28 @@ export const createPortalSessionController = async (session: AuthSession) => {
 
 export const getAccessStateController = async (session: AuthSession) =>
   readAccessState(session.userId)
+
+export interface PreviewPlanChangeControllerInput {
+  plan: string
+  authSession: AuthSession
+}
+
+export const previewPlanChangeController = async (input: PreviewPlanChangeControllerInput) => {
+  requireBillingConfigured()
+
+  return previewUpgrade(input.authSession.userId, input.plan)
+}
+
+export interface ChangePlanControllerInput {
+  plan: string
+  prorationDateUnix?: number
+  authSession: AuthSession
+}
+
+export const changePlanController = async (input: ChangePlanControllerInput) => {
+  requireBillingConfigured()
+
+  await executeUpgrade(input.authSession.userId, input.plan, input.prorationDateUnix)
+
+  return { status: 'ok' as const }
+}

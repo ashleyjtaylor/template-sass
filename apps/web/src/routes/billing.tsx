@@ -1,8 +1,18 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { ArrowUpRight, ExternalLink, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccessState, useCreatePortalSession } from '@/modules/billing/api'
+import { UpgradeModal } from '@/modules/billing/UpgradeModal'
+
+// Plan keys we surface an in-app upgrade for. The map is the current
+// plan -> the plan we offer as an upgrade target. Anything not in the
+// map renders without an upgrade affordance (e.g. 'max' is the top
+// tier today, so no row; future tiers extend the map).
+const UPGRADE_TARGETS: Record<string, { plan: string; label: string }> = {
+  pro: { plan: 'max', label: 'Max' }
+}
 
 export const Route = createFileRoute('/billing')({
   component: BillingPage
@@ -11,6 +21,7 @@ export const Route = createFileRoute('/billing')({
 function BillingPage() {
   const access = useAccessState()
   const portal = useCreatePortalSession()
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   const openPortal = () => {
     portal.mutate(undefined, {
@@ -20,14 +31,17 @@ function BillingPage() {
     })
   }
 
+  const planKey = access.data?.subscription?.planKey
+  const upgradeTarget = planKey ? UPGRADE_TARGETS[planKey] : undefined
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Billing</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Subscription & payments</h1>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Your current plan and renewal details. Plan switches, card changes, invoices and
-          cancellations are handled by Stripe.
+          Your current plan and renewal details. Upgrades happen in-app; cards, invoices, downgrades
+          and cancellations are handled by Stripe.
         </p>
       </header>
 
@@ -39,9 +53,20 @@ function BillingPage() {
           onManage={openPortal}
           managePending={portal.isPending}
           manageError={portal.isError}
+          upgradeTarget={upgradeTarget}
+          onUpgrade={() => setUpgradeOpen(true)}
         />
       ) : (
         <EmptyState />
+      )}
+
+      {upgradeTarget && (
+        <UpgradeModal
+          open={upgradeOpen}
+          onOpenChange={setUpgradeOpen}
+          targetPlan={upgradeTarget.plan}
+          targetPlanLabel={upgradeTarget.label}
+        />
       )}
     </div>
   )
@@ -57,13 +82,17 @@ interface SubscriptionCardProps {
   onManage: () => void
   managePending: boolean
   manageError: boolean
+  upgradeTarget: { plan: string; label: string } | undefined
+  onUpgrade: () => void
 }
 
 function SubscriptionCard({
   subscription,
   onManage,
   managePending,
-  manageError
+  manageError,
+  upgradeTarget,
+  onUpgrade
 }: SubscriptionCardProps) {
   const renewLabel = subscription.cancelAtPeriodEnd ? 'Ends' : 'Renews'
 
@@ -112,14 +141,29 @@ function SubscriptionCard({
         </div>
       )}
 
+      {upgradeTarget && (
+        <div className="mt-6 flex items-center justify-between border-t pt-5">
+          <div>
+            <p className="text-sm font-medium">Upgrade to {upgradeTarget.label}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Switch instantly, prorated for the rest of this billing period.
+            </p>
+          </div>
+          <Button onClick={onUpgrade}>
+            Upgrade
+            <ArrowUpRight className="size-3.5" />
+          </Button>
+        </div>
+      )}
+
       <div className="mt-6 flex items-center justify-between border-t pt-5">
         <div>
           <p className="text-sm font-medium">Manage your subscription</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Change plan, update card, view invoices, cancel — all handled by Stripe.
+            Update card, view invoices, downgrade, cancel — all handled by Stripe.
           </p>
         </div>
-        <Button onClick={onManage} disabled={managePending}>
+        <Button variant="outline" onClick={onManage} disabled={managePending}>
           {managePending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
