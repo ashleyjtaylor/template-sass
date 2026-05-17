@@ -18,8 +18,10 @@ test('deletes the account from /account and bounces to /login', async ({ browser
   await applyStorageState(context, storageState)
   const page = await context.newPage()
 
-  await page.goto('/account')
-  await expect(page.getByRole('heading', { name: /account settings/i })).toBeVisible()
+  // Delete account lives on the Security tab now that /account is a
+  // tabbed layout (bare /account redirects to /account/profile).
+  await page.goto('/account/security')
+  await expect(page.getByRole('heading', { name: /^settings$/i })).toBeVisible()
   await page.getByRole('button', { name: /^delete account$/i }).click()
 
   // Modal: must type the email exactly + supply the current password
@@ -55,7 +57,7 @@ test('blocks the submit until the typed email matches the signed-in email', asyn
   await applyStorageState(context, storageState)
   const page = await context.newPage()
 
-  await page.goto('/account')
+  await page.goto('/account/security')
   await page.getByRole('button', { name: /^delete account$/i }).click()
 
   const dialog = page.getByRole('dialog')
