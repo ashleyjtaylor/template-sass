@@ -432,7 +432,15 @@ export const auth = betterAuth({
     additionalFields: {
       entityId: sharedEntityIdField('sess_'),
       requestId: sharedRequestIdField
-    }
+    },
+    // Disable the signed-cookie session cache so every authed request
+    // re-reads the Session row from Postgres. Better-auth's default
+    // (5-min cookie cache) gives a revoked session up to 5 min of
+    // zombie life on the requester's device after we delete the row;
+    // for an app with a "Sign out other devices" affordance, the
+    // expectation is immediate revocation. Cost: ~1ms per request to
+    // hit Postgres in the same VPC — negligible at our load.
+    cookieCache: { enabled: false }
   },
   account: {
     additionalFields: {
