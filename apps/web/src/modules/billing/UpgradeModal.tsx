@@ -40,13 +40,20 @@ interface UpgradeModalProps {
   // when a third tier lands.
   targetPlan: string
   targetPlanLabel: string
+  // Fired after a successful change. The page uses this to start
+  // polling access-state until the mirror reflects the new plan —
+  // the webhook lags the API response by ~200ms-1s, so the
+  // immediate cache invalidation from useChangePlan still sees the
+  // old planKey.
+  onUpgraded?: (targetPlan: string) => void
 }
 
 export function UpgradeModal({
   open,
   onOpenChange,
   targetPlan,
-  targetPlanLabel
+  targetPlanLabel,
+  onUpgraded
 }: UpgradeModalProps) {
   const preview = usePreviewPlanChange()
   const change = useChangePlan()
@@ -81,6 +88,7 @@ export function UpgradeModal({
             description: 'Your new plan is active.'
           })
           onOpenChange(false)
+          onUpgraded?.(targetPlan)
         }
       }
     )

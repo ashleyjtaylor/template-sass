@@ -1,10 +1,18 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ArrowUpRight, ExternalLink, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccessState, useCreatePortalSession } from '@/modules/billing/api'
 import { UpgradeModal } from '@/modules/billing/UpgradeModal'
+
+// How long to keep polling /api/billing/access-state after a successful
+// upgrade. The webhook lands the new planKey ~200ms-1s after the
+// change-plan API returns; 10s is a comfortable upper bound. If the
+// mirror still hasn't flipped by then we stop polling — user can
+// refresh manually (rare; usually means the webhook is misconfigured).
+const UPGRADE_POLL_TIMEOUT_MS = 10_000
+const UPGRADE_POLL_INTERVAL_MS = 500
 
 // Plan keys we surface an in-app upgrade for. The map is the current
 // plan -> the plan we offer as an upgrade target. Anything not in the
@@ -19,9 +27,28 @@ export const Route = createFileRoute('/billing')({
 })
 
 function BillingPage() {
-  const access = useAccessState()
-  const portal = useCreatePortalSession()
   const [upgradeOpen, setUpgradeOpen] = useState(false)
+  // While set, useAccessState polls every UPGRADE_POLL_INTERVAL_MS so
+  // the SubscriptionCard flips to the new plan as soon as the webhook
+  // lands the mirror update — no manual refresh.
+  const [pollForPlan, setPollForPlan] = useState<string | null>(null)
+
+  const access = useAccessState(pollForPlan ? { pollMs: UPGRADE_POLL_INTERVAL_MS } : {})
+  const portal = useCreatePortalSession()
+
+  // Stop polling as soon as the mirror reflects the target plan, or
+  // after the timeout cap if the webhook never lands.
+  useEffect(() => {
+    if (!pollForPlan) return
+
+    if (access.data?.subscription?.planKey === pollForPlan) {
+      setPollForPlan(null)
+      return
+    }
+
+    const timeout = setTimeout(() => setPollForPlan(null), UPGRADE_POLL_TIMEOUT_MS)
+    return () => clearTimeout(timeout)
+  }, [pollForPlan, access.data?.subscription?.planKey])
 
   const openPortal = () => {
     portal.mutate(undefined, {
@@ -66,6 +93,7 @@ function BillingPage() {
           onOpenChange={setUpgradeOpen}
           targetPlan={upgradeTarget.plan}
           targetPlanLabel={upgradeTarget.label}
+          onUpgraded={setPollForPlan}
         />
       )}
     </div>
