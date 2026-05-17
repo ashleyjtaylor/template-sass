@@ -44,10 +44,24 @@ const schema = z.object({
   // Stripe Checkout `success_url` / `cancel_url` and Customer Portal
   // `return_url`. Local dev defaults to apps/web's standard vite port;
   // deployed envs inject the CloudFront URL via app-stack.ts.
-  WEB_BASE_URL: z.string().url().default('http://localhost:5174')
+  WEB_BASE_URL: z.string().url().default('http://localhost:5174'),
+  // Google OAuth credentials. Both blank-tolerant so the API can boot
+  // without Google configured — `isGoogleConfigured()` returns false
+  // until both are populated, the `/api/auth/providers` endpoint then
+  // reports `google: false` and the SPA hides the button. Mirrors the
+  // Stripe `isBillingConfigured()` pattern.
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default('')
 })
 
 // DB_* env vars and the DATABASE_URL composition live in packages/db. Apps
 // just need to set DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME in
 // process.env; `@template-sass/db` reads them and composes the URL.
 export const env = schema.parse(process.env)
+
+// True iff both Google OAuth credentials are populated. The
+// `socialProviders.google` block in lib/auth.ts is only registered
+// when this is true, and `/api/auth/providers` reports the same value
+// so the SPA can hide the Google button on fresh forks.
+export const isGoogleConfigured = (): boolean =>
+  env.GOOGLE_CLIENT_ID.length > 0 && env.GOOGLE_CLIENT_SECRET.length > 0

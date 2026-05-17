@@ -9,7 +9,10 @@ const log = logger.child({ module: 'account' })
 
 export interface DeleteAccountInput {
   userId: string
-  password: string
+  // Required for users with a credential Account; ignored for OAuth-only
+  // users (who have no password to verify). Service layer enforces
+  // this — the route accepts an empty body for OAuth-only callers.
+  password: string | undefined
 }
 
 // Verifies the current password, cancels any live Stripe subscription
@@ -39,6 +42,8 @@ export async function deleteAccount(input: DeleteAccountInput): Promise<void> {
   if (!user) throw new NotFoundError('User not found')
 
   await verifyCurrentPassword(input.userId, input.password)
+  // ^ throws ValidationError on bad/missing password for credential users,
+  // returns void (no check) for OAuth-only users.
 
   // Cancel Stripe sub before deleting the user so we have access to the
   // stripeSubscriptionId. Cancellation is best-effort: a Stripe outage
@@ -79,24 +84,40 @@ export async function deleteAccount(input: DeleteAccountInput): Promise<void> {
   }
 }
 
-async function verifyCurrentPassword(userId: string, password: string): Promise<void> {
+async function verifyCurrentPassword(userId: string, password: string | undefined): Promise<void> {
   const account = await prisma.account.findFirst({
     where: { userId, providerId: 'credential' },
     select: { password: true }
   })
 
-  if (!account?.password) {
-    // Either the row is missing (shouldn't happen for email/password
-    // users) or it has no hash (OAuth-only — not possible today but #4
-    // adds Google login). Surface as 400: the caller is authenticated
-    // but the verification input doesn't apply.
-    throw new ValidationError('No credential account on file to verify against', {
-      reason: 'NoCredentialAccount'
-    })
+  // OAuth-only user — no credential Account row, so no password exists
+  // to verify. Session cookie alone authorises the delete; the SPA's
+  // delete modal hides the password input in this case.
+  if (!account?.password) return
+
+  if (!password) {
+    throw new ValidationError('Password is required', { reason: 'MissingPassword' })
   }
 
   const ok = await verifyPassword({ hash: account.password, password })
   if (!ok) {
     throw new ValidationError('Incorrect password', { reason: 'BadPassword' })
+  }
+}
+
+// Inventories the sign-in methods this user has on file. Used by the
+// SPA to branch the /account UI (hide Password section for OAuth-only
+// users) and the delete-account modal (hide the password input).
+export async function listAccountMethods(
+  userId: string
+): Promise<{ hasPassword: boolean; hasGoogle: boolean }> {
+  const accounts = await prisma.account.findMany({
+    where: { userId },
+    select: { providerId: true, password: true }
+  })
+
+  return {
+    hasPassword: accounts.some((a) => a.providerId === 'credential' && Boolean(a.password)),
+    hasGoogle: accounts.some((a) => a.providerId === 'google')
   }
 }

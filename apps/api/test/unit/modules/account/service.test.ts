@@ -174,16 +174,33 @@ describe('deleteAccount', () => {
     expect(send).not.toHaveBeenCalled()
   })
 
-  it('rejects with NoCredentialAccount when the credential row is missing or unhashed', async () => {
+  it('allows delete without a password when the user is OAuth-only (no credential row)', async () => {
     const { deleteAccount } = await importService()
 
     vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(userRow() as never)
+    // OAuth-only user — credential lookup returns nothing.
     vi.spyOn(prisma.account, 'findFirst').mockResolvedValue(null)
+    stubVerificationDelete()
+    const userDelete = vi.spyOn(prisma.user, 'delete').mockResolvedValue({} as never)
+    stubStripeClient()
+    vi.spyOn(mailer, 'sendAccountDeleted').mockResolvedValue(undefined)
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(true)
+
+    await deleteAccount({ userId: 'user-1', password: undefined })
+
+    expect(userDelete).toHaveBeenCalledWith({ where: { id: 'user-1' } })
+  })
+
+  it('rejects with MissingPassword when a credential user sends no password', async () => {
+    const { deleteAccount } = await importService()
+
+    vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(userRow() as never)
+    vi.spyOn(prisma.account, 'findFirst').mockResolvedValue({ password: 'hash' } as never)
     const userDelete = vi.spyOn(prisma.user, 'delete').mockResolvedValue({} as never)
 
-    await expect(deleteAccount({ userId: 'user-1', password: 'anything' })).rejects.toMatchObject({
+    await expect(deleteAccount({ userId: 'user-1', password: undefined })).rejects.toMatchObject({
       status: 400,
-      details: { reason: 'NoCredentialAccount' }
+      details: { reason: 'MissingPassword' }
     })
     expect(userDelete).not.toHaveBeenCalled()
   })
@@ -195,6 +212,61 @@ describe('deleteAccount', () => {
 
     await expect(deleteAccount({ userId: 'ghost', password: 'x' })).rejects.toMatchObject({
       status: 404
+    })
+  })
+})
+
+describe('listAccountMethods', () => {
+  it('reports hasPassword=true when a credential account with a hash exists', async () => {
+    const { listAccountMethods } = await importService()
+
+    vi.spyOn(prisma.account, 'findMany').mockResolvedValue([
+      { providerId: 'credential', password: 'argon2-hash' }
+    ] as never)
+
+    await expect(listAccountMethods('user-1')).resolves.toEqual({
+      hasPassword: true,
+      hasGoogle: false
+    })
+  })
+
+  it('reports hasGoogle=true when a google account is linked', async () => {
+    const { listAccountMethods } = await importService()
+
+    vi.spyOn(prisma.account, 'findMany').mockResolvedValue([
+      { providerId: 'google', password: null }
+    ] as never)
+
+    await expect(listAccountMethods('user-1')).resolves.toEqual({
+      hasPassword: false,
+      hasGoogle: true
+    })
+  })
+
+  it('reports both flags when the user has linked both providers', async () => {
+    const { listAccountMethods } = await importService()
+
+    vi.spyOn(prisma.account, 'findMany').mockResolvedValue([
+      { providerId: 'credential', password: 'argon2-hash' },
+      { providerId: 'google', password: null }
+    ] as never)
+
+    await expect(listAccountMethods('user-1')).resolves.toEqual({
+      hasPassword: true,
+      hasGoogle: true
+    })
+  })
+
+  it('reports hasPassword=false when the credential row has no hash', async () => {
+    const { listAccountMethods } = await importService()
+
+    vi.spyOn(prisma.account, 'findMany').mockResolvedValue([
+      { providerId: 'credential', password: null }
+    ] as never)
+
+    await expect(listAccountMethods('user-1')).resolves.toEqual({
+      hasPassword: false,
+      hasGoogle: false
     })
   })
 })

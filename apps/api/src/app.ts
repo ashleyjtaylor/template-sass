@@ -10,6 +10,7 @@ import { healthReady } from '@/middleware/health-ready.js'
 import { requestId } from '@/middleware/request-id.js'
 import { requestLogger } from '@/middleware/request-logger.js'
 import { accountRoutes } from '@/modules/account/routes.js'
+import { authRoutes } from '@/modules/auth/routes.js'
 import { billingRoutes } from '@/modules/billing/routes.js'
 import { stripeWebhookRoutes } from '@/modules/webhooks/stripe.js'
 
@@ -47,6 +48,10 @@ export function createApp({
 
   app.get('/health/ready', healthReady)
 
+  // Mount auth metadata routes BEFORE the better-auth wildcard so
+  // /api/auth/providers (and any future SPA-facing helpers) aren't
+  // swallowed by better-auth's catch-all 404.
+  app.route('/api/auth', authRoutes)
   app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 
   app.route('/api/account', accountRoutes)

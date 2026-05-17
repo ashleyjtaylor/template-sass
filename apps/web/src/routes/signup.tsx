@@ -1,17 +1,22 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowRight, Loader2 } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import { AuthCardLayout, AuthField } from '@/components/layout/AuthCardLayout'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api'
+import { getLastAuthMethod } from '@/lib/last-auth-method'
 import { safeRedirect } from '@/lib/redirect'
+import { cn } from '@/lib/utils'
 import { useCreateCheckoutSession } from '@/modules/billing/api'
-import { useSignUp } from '@/modules/session/api'
+import { useAuthProviders, useSignUp } from '@/modules/session/api'
+import { GoogleSignInButton, LastUsedPill } from '@/modules/session/GoogleSignInButton'
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
-  plan: z.string().optional()
+  plan: z.string().optional(),
+  error: z.string().optional()
 })
 
 export const Route = createFileRoute('/signup')({
@@ -35,10 +40,43 @@ function SignUpPage() {
   const search = Route.useSearch()
   const signUp = useSignUp()
   const checkout = useCreateCheckoutSession()
+  const providers = useAuthProviders()
   const [firstname, setFirstname] = useState('')
   const [lastname, setLastname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  // Read once on mount — localStorage doesn't change reactively.
+  const lastUsed = useMemo(() => getLastAuthMethod(), [])
+
+  // Mirror /login's OAuth-failure handler so the user lands back here
+  // with a clear toast and a clean URL.
+  useEffect(() => {
+    if (!search.error) return
+
+    toast.error('Could not sign in with Google', {
+      id: 'oauth-error',
+      description: 'Try again, or sign up with your email and password.'
+    })
+    navigate({
+      to: '/signup',
+      search: { ...search, error: undefined },
+      replace: true
+    })
+  }, [search, navigate])
+
+  // Preserve the ?plan param through the OAuth round-trip so /dashboard
+  // can auto-bounce the user into Stripe Checkout post-sign-in. The
+  // `from=google` marker tells /dashboard to record 'google' as the
+  // last-used method only after a successful round trip.
+  const callbackURL = (() => {
+    const url = new URL('/dashboard', window.location.origin)
+    url.searchParams.set('from', 'google')
+    if (search.plan) url.searchParams.set('plan', search.plan)
+    return url.toString()
+  })()
+  const errorParams = new URLSearchParams({ error: 'oauth_failed' })
+  if (search.plan) errorParams.set('plan', search.plan)
+  const errorCallbackURL = `${window.location.origin}/signup?${errorParams.toString()}`
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -136,17 +174,45 @@ function SignUpPage() {
           disabled={busy}
         />
 
-        <Button type="submit" className="group w-full" disabled={busy}>
-          {busy ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <>
-              {search.plan ? 'Create account & continue' : 'Create account'}
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-            </>
-          )}
-        </Button>
+        <div className="relative mt-8">
+          <Button
+            type="submit"
+            className={cn(
+              'group w-full',
+              // Blue ring when the user signed up with email last time,
+              // matching the LastUsedPill. Solid (no alpha) so the
+              // shade matches the pill exactly.
+              lastUsed === 'email' && 'ring-4 ring-blue-500 ring-offset-2'
+            )}
+            disabled={busy}
+          >
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <>
+                {search.plan ? 'Create account & continue' : 'Create account'}
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </>
+            )}
+          </Button>
+          {lastUsed === 'email' ? <LastUsedPill /> : null}
+        </div>
       </form>
+
+      {providers.data?.google ? (
+        <>
+          <div className="my-5 flex items-center gap-3 text-[10px] uppercase text-muted-foreground/70">
+            <div className="h-px flex-1 bg-border" />
+            <span>Or continue with</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <GoogleSignInButton
+            callbackURL={callbackURL}
+            errorCallbackURL={errorCallbackURL}
+            lastUsed={lastUsed === 'google'}
+          />
+        </>
+      ) : null}
     </AuthCardLayout>
   )
 }
