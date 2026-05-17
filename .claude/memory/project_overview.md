@@ -53,12 +53,13 @@ infra/cdk/
 
 ## Data model
 
-Six models in `packages/db/prisma/schema.prisma`:
+Seven models in `packages/db/prisma/schema.prisma`:
 
 - `User` — better-auth user with our `entityId` (`usr_<uuid>`), `firstname`, `lastname`, optional `stripeCustomerId @unique`
 - `Session`, `Account`, `Verification` — better-auth vendor tables, all carrying an `entityId` + `requestId`
 - `Subscription` — Stripe mirror, **one row per user** (`userId @unique`). UPSERTed by the webhook. Carries `stripeSubscriptionId`, `stripePriceId`, `planKey`, `status`, period bounds, cancel flags
 - `StripeEvent` — idempotency anchor (`id` is the Stripe event id; uniqueness short-circuits replays)
+- `RateLimit` — counters for better-auth's per-IP limiter (`storage: 'database'`) and our per-email sign-in lockout. Key prefix `signin:fail:` for the lockout; better-auth manages the rest. See [`.claude/skills/auth/SKILL.md`](../skills/auth/SKILL.md) for limits + upgrade path
 
 Entity IDs use Stripe-style truncated prefixes: `usr_`, `sess_`, `acct_`, `veri_`, `sub_`. The full id is `<prefix>_<uuid>`. Better-auth tables also carry their own internal `id` column for vendor compatibility.
 
@@ -95,6 +96,7 @@ CORS: explicit allowlist of frontend origins via `CORS_ORIGINS` env var.
 - `databaseHooks.user.create.before` composes `name` from `firstname + lastname` if missing
 - `requireSession` middleware: throws 401 if no session, otherwise puts `{ userId, userEntityId, email }` on `c.var.authSession`
 - Sessions are DB-backed (better-auth default). Cookies are `SameSite=Lax`, `Secure`, `HttpOnly`
+- **Rate limiting** — better-auth's per-IP limiter backed by the `RateLimit` Prisma table (`storage: 'database'`), plus a per-email sign-in lockout in `hooks.before` / `hooks.after` (5 fails / 15 min). Gated to `APP_ENV in {staging, production}` so local + e2e don't 429 against themselves. Full per-route table and the upgrade path to Redis live in the auth skill
 
 ---
 

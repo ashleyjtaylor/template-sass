@@ -125,3 +125,28 @@ model StripeEvent {
   @@index([type, processedAt(sort: Desc)])
   @@map("stripe_event")
 }
+
+// Rate-limit counters. Used by better-auth's `storage: 'database'` mode
+// (per-IP per-route limits) and by our per-email sign-in lockout hook
+// (key prefix `signin:fail:`). Better-auth writes only `{ key, count,
+// lastRequest }` — every other column needs a DB-side default so its
+// inserts succeed. `entityId` follows the standard `<prefix>_<uuid>`
+// pattern via gen_random_uuid() (Postgres 13+, built-in).
+model RateLimit {
+  id          String   @id @default(cuid())
+  entityId    String   @unique @default(dbgenerated("'rl_' || gen_random_uuid()"))
+  requestId   String?
+  key         String   @unique
+  count       Int      @default(0)
+  // Prisma `Float` (Postgres `double precision`) — accepts JS `number`
+  // natively. Better-auth writes `Date.now()` here as a number; storing
+  // as `BigInt` would require a custom adapter shim. Doubles hold every
+  // integer up to 2^53 exactly, so ms timestamps round-trip without loss
+  // for the next ~285,000 years.
+  lastRequest Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([requestId])
+  @@map("rate_limit")
+}

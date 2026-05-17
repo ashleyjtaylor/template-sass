@@ -156,6 +156,85 @@ describe('body limit', () => {
   })
 })
 
+describe('better-auth 429 envelope wrapper', () => {
+  afterEach(() => {
+    vi.resetModules()
+    vi.doUnmock('@/lib/auth.js')
+  })
+
+  // Helper: rebuild createApp with a stubbed better-auth handler so the
+  // wrapper can be exercised in isolation. Each case supplies the
+  // Response that the stubbed auth.handler returns.
+  const appWithStubbedAuth = async (stub: () => Response | Promise<Response>) => {
+    vi.resetModules()
+    vi.doMock('@/lib/auth.js', () => ({
+      auth: { handler: vi.fn(stub) }
+    }))
+    const { createApp: createAppFresh } = await import('@/app.js')
+    return createAppFresh({ gitSha: 'test', appEnv: 'local' })
+  }
+
+  it('injects a TOO_MANY_REQUESTS code on a 429 body that only has a message', async () => {
+    const app = await appWithStubbedAuth(
+      () =>
+        new Response(JSON.stringify({ message: 'Too many requests. Please try again later.' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'X-Retry-After': '60' }
+        })
+    )
+
+    const res = await app.request('/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { Origin: 'http://localhost:5174', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'a@b.c', password: 'x' })
+    })
+
+    expect(res.status).toBe(429)
+    expect(await res.json()).toEqual({
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many requests. Please try again later.'
+    })
+  })
+
+  it('passes through a 429 that already carries a code untouched', async () => {
+    const app = await appWithStubbedAuth(
+      () =>
+        new Response(
+          JSON.stringify({ code: 'CUSTOM_LIMIT', message: 'Too many sign-in attempts.' }),
+          { status: 429, headers: { 'Content-Type': 'application/json' } }
+        )
+    )
+
+    const res = await app.request('/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { Origin: 'http://localhost:5174', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'a@b.c', password: 'x' })
+    })
+
+    expect(await res.json()).toEqual({
+      code: 'CUSTOM_LIMIT',
+      message: 'Too many sign-in attempts.'
+    })
+  })
+
+  it('does not touch non-429 responses', async () => {
+    const app = await appWithStubbedAuth(
+      () =>
+        new Response(JSON.stringify({ user: { id: 'u_1' } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+    )
+
+    const res = await app.request('/api/auth/get-session', {
+      headers: { Origin: 'http://localhost:5174' }
+    })
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ user: { id: 'u_1' } })
+  })
+})
+
 describe('request logger', () => {
   it('should not log /health requests', async () => {
     const app = createApp({ gitSha: 'test', appEnv: 'local' })

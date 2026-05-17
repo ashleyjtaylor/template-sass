@@ -1,10 +1,34 @@
+import crypto from 'node:crypto'
 import { prisma } from '@template-sass/db'
 import { isMailerConfigured, sendEmailVerification, sendPasswordReset } from '@template-sass/mailer'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api'
+import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from 'better-auth/api'
 import { env, isGoogleConfigured } from '@/env.js'
 import { getRequestId, logger } from '@/lib/logger.js'
+
+// SHA256 of a lowercased identifier, truncated to 16 hex chars. Used as
+// the rate-limit key suffix so the RateLimit table never stores raw emails.
+// 16 chars (64 bits) is collision-resistant enough for per-key counters.
+const hashIdentifier = (value: string): string =>
+  crypto.createHash('sha256').update(value.toLowerCase()).digest('hex').slice(0, 16)
+
+const logRateLimitExceeded = (params: {
+  route: string
+  identifierHash?: string
+  limit: number
+  windowSec: number
+}): void => {
+  logger.warn({ event: 'rate_limit_exceeded', ...params }, 'rate limit exceeded')
+}
+
+// Per-email sign-in lockout: 5 fails within 15 min triggers a 429.
+// Counter is cleared on successful sign-in (after-hook below). Counters
+// for unknown emails are still incremented — looking the same as a
+// real-account failure preserves enumeration resistance.
+const SIGNIN_FAIL_KEY_PREFIX = 'signin:fail:'
+const SIGNIN_FAIL_WINDOW_MS = 15 * 60 * 1000
+const SIGNIN_FAIL_MAX = 5
 
 const entityId = (prefix: string) => () => `${prefix}${crypto.randomUUID()}`
 
@@ -138,24 +162,56 @@ export const auth = betterAuth({
         }
       }
     : {}),
-  // Per-IP global rate limit on /request-password-reset (memory-backed,
-  // fine for a single API task). Per-email throttling is enforced in
-  // the `before` hook below.
+  // Per-IP rate limiting backed by the RateLimit table (Postgres).
+  // Per-email lockout on sign-in is enforced in the hooks below.
   //
-  // Disabled outside production: better-auth's defaults are aggressive
-  // (sign-up/sign-in: max 3 per 10s per IP) and hit local dev + e2e
-  // suite hard since everything originates from 127.0.0.1. Production
-  // reinstates them — abuse pressure is real there.
+  // Enabled in staging + production. Disabled for local + test because
+  // better-auth keys per-IP and everything in those envs comes from
+  // 127.0.0.1 — the e2e suite would 429 against itself. Targeted
+  // integration tests that need 429 coverage build their own app
+  // instance with the gate flipped on.
   rateLimit: {
-    enabled: env.NODE_ENV === 'production',
-    storage: 'memory',
+    enabled: env.APP_ENV === 'staging' || env.APP_ENV === 'production',
+    storage: 'database',
     customRules: {
+      '/sign-in/email': { window: 600, max: 20 },
+      '/sign-up/email': { window: 3600, max: 5 },
+      '/sign-in/social/*': { window: 600, max: 20 },
+      '/change-password': { window: 3600, max: 10 },
       '/request-password-reset': { window: 3600, max: 10 },
       '/send-verification-email': { window: 3600, max: 10 }
     }
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === '/sign-in/email') {
+        const body = ctx.body as { email?: string } | undefined
+        const email = body?.email?.toLowerCase()
+        if (!email) return
+
+        const key = `${SIGNIN_FAIL_KEY_PREFIX}${hashIdentifier(email)}`
+        const row = await prisma.rateLimit.findUnique({ where: { key } })
+        if (!row) return
+
+        // Sliding window: only block when the most recent failure was inside
+        // the window. An out-of-window row is effectively expired — the
+        // after-hook will overwrite it on the next failure.
+        const now = Date.now()
+        const lastMs = row.lastRequest ?? 0
+        if (now - lastMs < SIGNIN_FAIL_WINDOW_MS && row.count >= SIGNIN_FAIL_MAX) {
+          logRateLimitExceeded({
+            route: '/sign-in/email',
+            identifierHash: hashIdentifier(email),
+            limit: SIGNIN_FAIL_MAX,
+            windowSec: SIGNIN_FAIL_WINDOW_MS / 1000
+          })
+          throw new APIError('TOO_MANY_REQUESTS', {
+            message: 'Too many sign-in attempts. Try again later.'
+          })
+        }
+        return
+      }
+
       if (ctx.path === '/request-password-reset') {
         const body = ctx.body as { email?: string } | undefined
         const email = body?.email?.toLowerCase()
@@ -285,6 +341,36 @@ export const auth = betterAuth({
         })
         return
       }
+    }),
+    // Per-email sign-in counter: clear on success, increment on failure.
+    // Pair to the before-hook above. Reusing the RateLimit table (same
+    // shape as better-auth's own counters) keeps the per-IP and per-email
+    // limits in one place.
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/sign-in/email') return
+
+      const body = ctx.body as { email?: string } | undefined
+      const email = body?.email?.toLowerCase()
+      if (!email) return
+
+      const key = `${SIGNIN_FAIL_KEY_PREFIX}${hashIdentifier(email)}`
+      const returned = ctx.context.returned
+
+      // 401 (wrong password / unknown user) — APIError instance. Increment.
+      // Unknown-email failures still count: makes a probe look identical
+      // to a real-account miss, preserving enumeration resistance.
+      if (isAPIError(returned)) {
+        const now = Date.now()
+        await prisma.rateLimit.upsert({
+          where: { key },
+          create: { key, count: 1, lastRequest: now },
+          update: { count: { increment: 1 }, lastRequest: now }
+        })
+        return
+      }
+
+      // 200 — wipe the counter so the user starts fresh next time.
+      await prisma.rateLimit.deleteMany({ where: { key } })
     })
   },
   user: {

@@ -52,7 +52,26 @@ export function createApp({
   // /api/auth/providers (and any future SPA-facing helpers) aren't
   // swallowed by better-auth's catch-all 404.
   app.route('/api/auth', authRoutes)
-  app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+  app.on(['POST', 'GET'], '/api/auth/*', async (c) => {
+    const res = await auth.handler(c.req.raw)
+    if (res.status !== 429) return res
+
+    // Better-auth's 429 body is `{ message }` only — no `code`. Our SPA's
+    // ApiError expects `{ code, message, details? }`. Without `code` the
+    // SPA renders the unhelpful fallback "HTTP 429". Inject the missing
+    // field so a rate-limit 429 surfaces with the same envelope and toast
+    // copy as the rest of the API.
+    const body = (await res
+      .clone()
+      .json()
+      .catch(() => null)) as Record<string, unknown> | null
+    if (!body || typeof body !== 'object' || 'code' in body) return res
+
+    return new Response(JSON.stringify({ code: 'TOO_MANY_REQUESTS', ...body }), {
+      status: 429,
+      headers: res.headers
+    })
+  })
 
   app.route('/api/account', accountRoutes)
   app.route('/api/billing', billingRoutes)
