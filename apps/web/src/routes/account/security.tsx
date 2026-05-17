@@ -27,11 +27,10 @@ function SecurityTab() {
 
   // `type='multiple'` lets the user open more than one section at a
   // time — useful when reviewing sessions while also drafting a
-  // password change. Password starts open as the most common action.
-  const defaultOpen = hasPassword ? ['password'] : ['sessions']
-
+  // password change. All collapsed by default; the user opens what
+  // they need.
   return (
-    <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-3">
+    <Accordion type="multiple" className="space-y-3">
       {hasPassword && (
         <AccordionItem value="password">
           <AccordionTrigger>Password</AccordionTrigger>
