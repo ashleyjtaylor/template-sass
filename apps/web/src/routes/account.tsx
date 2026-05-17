@@ -2,8 +2,10 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { AuthField } from '@/components/layout/AuthCardLayout'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApiError } from '@/lib/api'
 import {
   type NameValidationError,
@@ -21,7 +23,15 @@ import {
   useUpdateProfile
 } from '@/modules/session/api'
 
+const TABS = ['profile', 'security'] as const
+type SettingsTab = (typeof TABS)[number]
+
+const searchSchema = z.object({
+  tab: z.enum(TABS).optional()
+})
+
 export const Route = createFileRoute('/account')({
+  validateSearch: searchSchema,
   component: AccountPage
 })
 
@@ -83,6 +93,7 @@ function AccountPage() {
   const methods = useAccountMethods()
   const deleteAccount = useDeleteAccount()
   const forgot = useForgotPassword()
+  const search = Route.useSearch()
   const [modalOpen, setModalOpen] = useState(false)
 
   if (!user) return null
@@ -120,41 +131,60 @@ function AccountPage() {
     )
   }
 
+  const activeTab: SettingsTab = search.tab ?? 'profile'
+
+  // Round-trip tab state through the URL so refresh + deep-link work
+  // without local state. `replace: true` keeps the back button useful
+  // (one history entry per visit, not per tab click).
+  const setTab = (tab: SettingsTab) => {
+    navigate({ to: '/account', search: { tab }, replace: true })
+  }
+
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <div className="mx-auto max-w-5xl px-6 py-12">
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Account</div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Account settings</h1>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Manage your profile, sign-in credentials, and destructive account actions. Subscription
-          changes live on the Billing page.
+          Manage your profile and sign-in credentials.
         </p>
       </header>
 
-      <ProfileSection
-        initialFirstname={user.firstname ?? ''}
-        initialLastname={user.lastname ?? ''}
-      />
+      <Tabs value={activeTab} onValueChange={(v) => setTab(v as SettingsTab)}>
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+        </TabsList>
 
-      {hasPassword ? (
-        <PasswordSection
-          email={user.email}
-          onForgotPassword={handleResetPassword}
-          forgotPending={forgot.isPending}
-        />
-      ) : null}
+        <TabsContent value="profile" className="mt-8">
+          <ProfileSection
+            initialFirstname={user.firstname ?? ''}
+            initialLastname={user.lastname ?? ''}
+          />
+        </TabsContent>
 
-      <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
-        <div className="text-[10px] font-medium uppercase text-destructive/80">Danger zone</div>
-        <h2 className="mt-1 text-lg font-semibold">Delete account</h2>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Permanently deletes your account and cancels any active subscription. You won't be
-          refunded for the remainder of your current billing period.
-        </p>
-        <Button variant="destructive" className="mt-5" onClick={() => setModalOpen(true)}>
-          Delete account
-        </Button>
-      </section>
+        <TabsContent value="security" className="mt-8">
+          {hasPassword ? (
+            <PasswordSection
+              email={user.email}
+              onForgotPassword={handleResetPassword}
+              forgotPending={forgot.isPending}
+            />
+          ) : null}
+
+          <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
+            <div className="text-[10px] font-medium uppercase text-destructive/80">Danger zone</div>
+            <h2 className="mt-1 text-lg font-semibold">Delete account</h2>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              Permanently deletes your account and cancels any active subscription. You won't be
+              refunded for the remainder of your current billing period.
+            </p>
+            <Button variant="destructive" className="mt-5" onClick={() => setModalOpen(true)}>
+              Delete account
+            </Button>
+          </section>
+        </TabsContent>
+      </Tabs>
 
       <ConfirmDeleteModal
         open={modalOpen}
@@ -215,7 +245,7 @@ function ProfileSection({ initialFirstname, initialLastname }: ProfileSectionPro
       : null
 
   return (
-    <section className="mb-8 border-b pb-8">
+    <section>
       <h2 className="text-lg font-semibold">Profile</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Your name appears in the dashboard nav and on emails we send you.
@@ -310,7 +340,7 @@ function PasswordSection({ email, onForgotPassword, forgotPending }: PasswordSec
       : null
 
   return (
-    <section className="mb-8 border-b pb-8">
+    <section className="mb-8">
       <h2 className="text-lg font-semibold">Password</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Change your password here. Updating it signs you out of every other device.
