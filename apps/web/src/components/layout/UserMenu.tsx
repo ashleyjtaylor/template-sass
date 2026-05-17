@@ -52,7 +52,7 @@ export function UserMenu() {
           <CreditCard className="size-3.5" />
           Billing
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => navigate({ to: '/account' })}>
+        <DropdownMenuItem onSelect={() => navigate({ to: '/account/profile' })}>
           <UserCog className="size-3.5" />
           Account
         </DropdownMenuItem>
