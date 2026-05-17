@@ -1,6 +1,11 @@
 import crypto from 'node:crypto'
 import { prisma } from '@template-sass/db'
-import { isMailerConfigured, sendEmailVerification, sendPasswordReset } from '@template-sass/mailer'
+import {
+  isMailerConfigured,
+  sendEmailVerification,
+  sendPasswordReset,
+  sendWelcome
+} from '@template-sass/mailer'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from 'better-auth/api'
@@ -29,6 +34,36 @@ const logRateLimitExceeded = (params: {
 const SIGNIN_FAIL_KEY_PREFIX = 'signin:fail:'
 const SIGNIN_FAIL_WINDOW_MS = 15 * 60 * 1000
 const SIGNIN_FAIL_MAX = 5
+
+// Shared wrapper for the welcome-email send. Both signup paths converge
+// here — `emailVerification.afterEmailVerification` for email+password
+// (after the verify link is clicked) and `databaseHooks.user.create.after`
+// for Google OAuth (where the user row lands with `emailVerified=true`
+// at insert time). Never throws: a failed welcome must not block the
+// signup / verification it follows.
+const sendWelcomeSafely = async (user: {
+  id: string
+  email: string
+  firstname?: string | undefined
+}): Promise<void> => {
+  if (!isMailerConfigured()) {
+    logger.warn(
+      { userId: user.id, email: user.email },
+      'sendWelcome called but mailer is not configured (MAIL_FROM empty) — skipping email send'
+    )
+    return
+  }
+
+  try {
+    await sendWelcome({
+      to: user.email,
+      firstname: user.firstname,
+      dashboardUrl: `${env.WEB_BASE_URL}/dashboard`
+    })
+  } catch (err) {
+    logger.error({ err, userId: user.id }, 'Failed to send welcome email')
+  }
+}
 
 const entityId = (prefix: string) => () => `${prefix}${crypto.randomUUID()}`
 
@@ -133,6 +168,17 @@ export const auth = betterAuth({
       } catch (err) {
         logger.error({ err, userId: user.id }, 'Failed to send email-verification email')
       }
+    },
+    // Fires after better-auth flips `emailVerified=true` in response to a
+    // GET /verify-email click. Email+password welcome path. (Google OAuth
+    // users land here pre-verified at signup — see the user.create.after
+    // hook below.)
+    afterEmailVerification: async (user) => {
+      await sendWelcomeSafely({
+        id: user.id,
+        email: user.email,
+        firstname: (user as { firstname?: string }).firstname
+      })
     }
   },
   // Google OAuth — only registered when both credentials are populated.
@@ -426,6 +472,20 @@ export const auth = betterAuth({
               name: `${firstname ?? ''} ${lastname ?? ''}`.trim()
             }
           }
+        },
+        // Welcome-email path for trusted-provider OAuth signups (Google
+        // today). Those land with `emailVerified=true` at insert time and
+        // skip the verify-link flow entirely, so `afterEmailVerification`
+        // never fires for them. Gating on `emailVerified` here prevents
+        // double-trigger for the email+password path, where the row is
+        // inserted with `emailVerified=false`.
+        after: async (user) => {
+          if (!user.emailVerified) return
+          await sendWelcomeSafely({
+            id: user.id,
+            email: user.email,
+            firstname: (user as { firstname?: string }).firstname
+          })
         }
       },
       update: {
