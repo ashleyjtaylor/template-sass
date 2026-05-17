@@ -41,11 +41,10 @@ export function SessionsSection() {
 
   const hasOthers = ordered.some((s) => s.entityId !== currentEntityId)
 
-  // Renders inside an AccordionContent on /account/security — own
-  // wrapper + heading live on the accordion shell.
   return (
-    <div>
-      <p className="max-w-xl text-sm text-muted-foreground">
+    <section className="rounded-lg border bg-card p-6">
+      <h2 className="text-lg font-semibold">Active sessions</h2>
+      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Devices currently signed in to your account. Sign out of any you don't recognise.
       </p>
 
@@ -84,7 +83,7 @@ export function SessionsSection() {
           {revokeOthers.isPending ? 'Signing out…' : 'Sign out all other devices'}
         </Button>
       )}
-    </div>
+    </section>
   )
 }
 

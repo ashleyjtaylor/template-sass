@@ -30,28 +30,21 @@ function SecurityTab() {
   // password change. All collapsed by default; the user opens what
   // they need.
   return (
-    <>
-      <Accordion type="multiple" className="space-y-3">
-        {hasPassword && (
+    <div className="space-y-6">
+      {hasPassword && (
+        <Accordion type="multiple">
           <AccordionItem value="password">
             <AccordionTrigger>Password</AccordionTrigger>
             <AccordionContent>
               <PasswordSection email={user.email} />
             </AccordionContent>
           </AccordionItem>
-        )}
+        </Accordion>
+      )}
 
-        <AccordionItem value="sessions">
-          <AccordionTrigger>Active sessions</AccordionTrigger>
-          <AccordionContent>
-            <SessionsSection />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      <SessionsSection />
 
-      <div className="mt-6">
-        <DeleteAccountSection email={user.email} hasPassword={hasPassword} />
-      </div>
-    </>
+      <DeleteAccountSection email={user.email} hasPassword={hasPassword} />
+    </div>
   )
 }
