@@ -17,6 +17,9 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountIndexRouteImport } from './routes/account/index'
+import { Route as AccountSecurityRouteImport } from './routes/account/security'
+import { Route as AccountProfileRouteImport } from './routes/account/profile'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -58,37 +61,60 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountSecurityRoute = AccountSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountProfileRoute = AccountProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AccountRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/account': typeof AccountRoute
+  '/account': typeof AccountRouteWithChildren
   '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/security': typeof AccountSecurityRoute
+  '/account/': typeof AccountIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/account': typeof AccountRoute
   '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/security': typeof AccountSecurityRoute
+  '/account': typeof AccountIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/account': typeof AccountRoute
+  '/account': typeof AccountRouteWithChildren
   '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/security': typeof AccountSecurityRoute
+  '/account/': typeof AccountIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,16 +127,21 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/account/profile'
+    | '/account/security'
+    | '/account/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/account'
     | '/billing'
     | '/dashboard'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/account/profile'
+    | '/account/security'
+    | '/account'
   id:
     | '__root__'
     | '/'
@@ -121,11 +152,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/account/profile'
+    | '/account/security'
+    | '/account/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AccountRoute: typeof AccountRoute
+  AccountRoute: typeof AccountRouteWithChildren
   BillingRoute: typeof BillingRoute
   DashboardRoute: typeof DashboardRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -192,12 +226,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/': {
+      id: '/account/'
+      path: '/'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/security': {
+      id: '/account/security'
+      path: '/security'
+      fullPath: '/account/security'
+      preLoaderRoute: typeof AccountSecurityRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/profile': {
+      id: '/account/profile'
+      path: '/profile'
+      fullPath: '/account/profile'
+      preLoaderRoute: typeof AccountProfileRouteImport
+      parentRoute: typeof AccountRoute
+    }
   }
 }
 
+interface AccountRouteChildren {
+  AccountProfileRoute: typeof AccountProfileRoute
+  AccountSecurityRoute: typeof AccountSecurityRoute
+  AccountIndexRoute: typeof AccountIndexRoute
+}
+
+const AccountRouteChildren: AccountRouteChildren = {
+  AccountProfileRoute: AccountProfileRoute,
+  AccountSecurityRoute: AccountSecurityRoute,
+  AccountIndexRoute: AccountIndexRoute,
+}
+
+const AccountRouteWithChildren =
+  AccountRoute._addFileChildren(AccountRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AccountRoute: AccountRoute,
+  AccountRoute: AccountRouteWithChildren,
   BillingRoute: BillingRoute,
   DashboardRoute: DashboardRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,

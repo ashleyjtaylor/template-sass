@@ -113,6 +113,52 @@ describe('better-auth sendVerificationEmail wiring', () => {
   })
 })
 
+describe('databaseHooks.user.update.before', () => {
+  it('recomposes `name` when firstname and lastname change without an explicit name', async () => {
+    const { auth } = await import('@/lib/auth.js')
+    const hook = auth.options.databaseHooks?.user?.update?.before
+    expect(hook).toBeDefined()
+
+    const result = await hook?.({ firstname: 'Sam', lastname: 'Lee' } as unknown as Parameters<
+      NonNullable<typeof hook>
+    >[0])
+
+    expect(result).toEqual({ data: { firstname: 'Sam', lastname: 'Lee', name: 'Sam Lee' } })
+  })
+
+  it('leaves the payload alone when name is explicitly supplied', async () => {
+    const { auth } = await import('@/lib/auth.js')
+    const hook = auth.options.databaseHooks?.user?.update?.before
+
+    const result = await hook?.({
+      firstname: 'Sam',
+      lastname: 'Lee',
+      name: 'Mx Sam Lee'
+    } as unknown as Parameters<NonNullable<typeof hook>>[0])
+
+    expect(result).toBeUndefined()
+  })
+
+  it('skips composition on partial updates so the missing half does not clobber', async () => {
+    const { auth } = await import('@/lib/auth.js')
+    const hook = auth.options.databaseHooks?.user?.update?.before
+
+    // firstname-only update (e.g. an unrelated email-change flow).
+    // Composing name with an empty lastname would overwrite the existing
+    // lastname half — skip instead.
+    const firstOnly = await hook?.({ firstname: 'Sam' } as unknown as Parameters<
+      NonNullable<typeof hook>
+    >[0])
+    expect(firstOnly).toBeUndefined()
+
+    // Updates that touch neither name field (e.g. email-only) are also skipped.
+    const noNameFields = await hook?.({ email: 'new@example.com' } as unknown as Parameters<
+      NonNullable<typeof hook>
+    >[0])
+    expect(noNameFields).toBeUndefined()
+  })
+})
+
 describe('better-auth account-linking config', () => {
   it('enables account linking with google as a trusted provider', async () => {
     const { auth } = await import('@/lib/auth.js')

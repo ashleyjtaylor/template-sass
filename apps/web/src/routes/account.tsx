@@ -1,123 +1,69 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { ApiError } from '@/lib/api'
-import { useAccountMethods, useDeleteAccount } from '@/modules/account/api'
-import { ConfirmDeleteModal } from '@/modules/account/ConfirmDeleteModal'
-import { useForgotPassword, useSession } from '@/modules/session/api'
+import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { cn } from '@/lib/utils'
+import { useSession } from '@/modules/session/api'
 
+// Layout for /account/*. Renders the page header + tab nav and an
+// <Outlet/> for the child route (profile / security). The tab links
+// are real routes (not query params) so each tab gets its own
+// history entry, deep links work, and route-level code splitting
+// kicks in per tab.
 export const Route = createFileRoute('/account')({
-  component: AccountPage
+  component: AccountLayout
 })
 
-const friendlyError = (err: unknown): string => {
-  if (err instanceof ApiError) {
-    if (err.code === 'BadPassword') return 'That password is incorrect.'
-    if (err.status >= 500) return 'Something went wrong on our end. Try again in a moment.'
-  }
-
-  return 'Could not delete your account. Try again.'
-}
-
-function AccountPage() {
-  const navigate = useNavigate()
+function AccountLayout() {
   const { user } = useSession()
-  const methods = useAccountMethods()
-  const deleteAccount = useDeleteAccount()
-  const forgot = useForgotPassword()
-  const [modalOpen, setModalOpen] = useState(false)
 
   if (!user) return null
 
-  // Default to true while methods are loading — keeps the password input
-  // visible (the safe fallback) until we know better. OAuth-only users
-  // briefly see the field, then it disappears on first response.
-  const hasPassword = methods.data?.hasPassword ?? true
-
-  const handleConfirm = (input: { password?: string }) => {
-    deleteAccount.mutate(input, {
-      onSuccess: () => {
-        setModalOpen(false)
-        toast.success('Account deleted', {
-          description: 'Your account and any active subscription have been removed.'
-        })
-        navigate({ to: '/login' })
-      }
-    })
-  }
-
-  const handleResetPassword = () => {
-    forgot.mutate(
-      { email: user.email },
-      {
-        onSuccess: () =>
-          toast.success('Reset link sent', {
-            description: `Check ${user.email} for a link to choose a new password.`
-          }),
-        onError: () =>
-          toast.error('Could not send reset link', {
-            description: 'Try again in a few minutes.'
-          })
-      }
-    )
-  }
-
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <div className="mx-auto max-w-5xl px-6 py-12">
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Account</div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Account settings</h1>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Manage your sign-in credentials and destructive account actions. Subscription changes live
-          on the Billing page.
+          Manage your profile and sign-in credentials.
         </p>
       </header>
 
-      {/* Hide the Password section for OAuth-only users — they don't
-        have a password to reset, and the server short-circuits the
-        request anyway. Surfacing the button would just produce a
-        "check your inbox" toast for an email they'll never get. */}
-      {hasPassword ? (
-        <section className="mb-6 rounded-lg border bg-card p-6">
-          <h2 className="text-lg font-semibold">Password</h2>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            We'll email a single-use link to {user.email}. Opening it lets you choose a new password
-            and signs you out of every other session.
-          </p>
-          <Button
-            variant="outline"
-            className="mt-5"
-            onClick={handleResetPassword}
-            disabled={forgot.isPending}
-          >
-            {forgot.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Send reset link'}
-          </Button>
-        </section>
-      ) : null}
+      <div className="border-b">
+        <nav
+          aria-label="Account settings"
+          className="inline-flex h-9 items-center gap-1 text-muted-foreground"
+        >
+          <TabLink to="/account/profile">Profile</TabLink>
+          <TabLink to="/account/security">Security</TabLink>
+        </nav>
+      </div>
 
-      <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
-        <div className="text-[10px] font-medium uppercase text-destructive/80">Danger zone</div>
-        <h2 className="mt-1 text-lg font-semibold">Delete account</h2>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Permanently deletes your account and cancels any active subscription. You won't be
-          refunded for the remainder of your current billing period.
-        </p>
-        <Button variant="destructive" className="mt-5" onClick={() => setModalOpen(true)}>
-          Delete account
-        </Button>
-      </section>
-
-      <ConfirmDeleteModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        expectedEmail={user.email}
-        hasPassword={hasPassword}
-        pending={deleteAccount.isPending}
-        errorMessage={deleteAccount.isError ? friendlyError(deleteAccount.error) : null}
-        onConfirm={handleConfirm}
-      />
+      <div className="mt-8">
+        <Outlet />
+      </div>
     </div>
+  )
+}
+
+interface TabLinkProps {
+  to: '/account/profile' | '/account/security'
+  children: React.ReactNode
+}
+
+function TabLink({ to, children }: TabLinkProps) {
+  // TanStack's `activeProps` is applied when the current URL matches.
+  // Visual treatment matches the shadcn Tabs primitive (`bg-muted` on
+  // the active tab, hover brightens inactive) so swapping back to the
+  // primitive later is trivial.
+  return (
+    <Link
+      to={to}
+      className={cn(
+        'inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors',
+        'hover:text-foreground',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40'
+      )}
+      activeProps={{ className: 'bg-muted text-foreground' }}
+    >
+      {children}
+    </Link>
   )
 }

@@ -6,6 +6,12 @@ export const sessionUserSchema = z.object({
   entityId: z.string(),
   email: z.string(),
   name: z.string(),
+  // additionalFields surfaced via better-auth's get-session response.
+  // Used to pre-populate the /account Profile form. Nullish to tolerate
+  // older sessions written before the additionalFields existed; once
+  // those expire the schema can tighten.
+  firstname: z.string().nullish(),
+  lastname: z.string().nullish(),
   emailVerified: z.boolean()
 })
 
