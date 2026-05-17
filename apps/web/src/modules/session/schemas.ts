@@ -25,3 +25,20 @@ export const sessionSchema = z
   .nullable()
 
 export type Session = z.infer<typeof sessionSchema>
+
+// One row in /api/auth/list-sessions. Better-auth surfaces our
+// additionalFields (entityId) alongside its own — we match the
+// current session by entityId to flag "this device" in the UI.
+export const activeSessionSchema = z.object({
+  entityId: z.string(),
+  token: z.string(),
+  ipAddress: z.string().nullish(),
+  userAgent: z.string().nullish(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  expiresAt: z.coerce.date()
+})
+
+export type ActiveSession = z.infer<typeof activeSessionSchema>
+
+export const activeSessionsSchema = z.array(activeSessionSchema)

@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { api } from '@/lib/api'
 import { setLastAuthMethod } from '@/lib/last-auth-method'
-import { sessionSchema } from './schemas'
+import { activeSessionsSchema, sessionSchema } from './schemas'
 
 const SESSION_KEY = ['session'] as const
+const ACTIVE_SESSIONS_KEY = ['session', 'list'] as const
 
 export const useSession = () => {
   const query = useQuery({
@@ -228,3 +229,35 @@ export const useSignInWithGoogle = () =>
       return result
     }
   })
+
+// Active sessions for the signed-in user. Better-auth's /list-sessions
+// returns every non-expired Session row (one per device). The /account
+// Security tab matches the current session by entityId so 'this device'
+// can be flagged without an extra fetch.
+export const useActiveSessions = () =>
+  useQuery({
+    queryKey: ACTIVE_SESSIONS_KEY,
+    queryFn: () => api('/api/auth/list-sessions', activeSessionsSchema),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true
+  })
+
+export const useRevokeSession = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (token: string) =>
+      api('/api/auth/revoke-session', z.unknown(), { method: 'POST', body: { token } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ACTIVE_SESSIONS_KEY })
+  })
+}
+
+export const useRevokeOtherSessions = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      api('/api/auth/revoke-other-sessions', z.unknown(), { method: 'POST', body: {} }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ACTIVE_SESSIONS_KEY })
+  })
+}

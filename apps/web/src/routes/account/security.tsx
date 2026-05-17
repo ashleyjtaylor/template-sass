@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useAccountMethods } from '@/modules/account/api'
 import { DeleteAccountSection } from '@/modules/account/DeleteAccountSection'
 import { PasswordSection } from '@/modules/account/PasswordSection'
+import { SessionsSection } from '@/modules/account/SessionsSection'
 import { useSession } from '@/modules/session/api'
 
 export const Route = createFileRoute('/account/security')({
@@ -23,6 +24,7 @@ function SecurityTab() {
   return (
     <>
       {hasPassword ? <PasswordSection email={user.email} /> : null}
+      <SessionsSection />
       <DeleteAccountSection email={user.email} hasPassword={hasPassword} />
     </>
   )

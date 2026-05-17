@@ -74,7 +74,7 @@ export function ProfileSection({ initialFirstname, initialLastname }: ProfileSec
       : null
 
   return (
-    <section>
+    <section className="rounded-lg border bg-card p-6">
       <h2 className="text-lg font-semibold">Profile</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Your name appears in the dashboard nav and on emails we send you.
