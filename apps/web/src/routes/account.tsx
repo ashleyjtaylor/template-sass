@@ -26,13 +26,15 @@ function AccountLayout() {
         </p>
       </header>
 
-      <nav
-        aria-label="Account settings"
-        className="inline-flex h-9 items-center gap-1 text-muted-foreground"
-      >
-        <TabLink to="/account/profile">Profile</TabLink>
-        <TabLink to="/account/security">Security</TabLink>
-      </nav>
+      <div className="border-b">
+        <nav
+          aria-label="Account settings"
+          className="inline-flex h-9 items-center gap-1 text-muted-foreground"
+        >
+          <TabLink to="/account/profile">Profile</TabLink>
+          <TabLink to="/account/security">Security</TabLink>
+        </nav>
+      </div>
 
       <div className="mt-8">
         <Outlet />
