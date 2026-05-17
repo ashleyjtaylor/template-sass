@@ -215,7 +215,7 @@ function ProfileSection({ initialFirstname, initialLastname }: ProfileSectionPro
       : null
 
   return (
-    <section className="mb-6 rounded-lg border bg-card p-6">
+    <section className="mb-8 border-b pb-8">
       <h2 className="text-lg font-semibold">Profile</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Your name appears in the dashboard nav and on emails we send you.
@@ -310,7 +310,7 @@ function PasswordSection({ email, onForgotPassword, forgotPending }: PasswordSec
       : null
 
   return (
-    <section className="mb-6 rounded-lg border bg-card p-6">
+    <section className="mb-8 border-b pb-8">
       <h2 className="text-lg font-semibold">Password</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Change your password here. Updating it signs you out of every other device.
