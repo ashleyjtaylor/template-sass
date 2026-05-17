@@ -38,7 +38,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex h-screen shrink-0 flex-col border-r bg-card/40 transition-[width] duration-200',
+        'flex h-screen shrink-0 flex-col overflow-hidden border-r bg-card/40 transition-[width] duration-200',
         expanded ? 'w-60' : 'w-14'
       )}
     >
@@ -48,26 +48,21 @@ export function Sidebar() {
           expanded ? 'justify-between' : 'justify-center'
         )}
       >
-        {expanded ? (
-          <div className="flex items-center gap-2">
+        {expanded && (
+          <div className="flex min-w-0 items-center gap-2">
             <div
               aria-hidden
-              className="size-6 rounded-md bg-linear-to-br from-foreground to-foreground/50"
+              className="size-6 shrink-0 rounded-md bg-linear-to-br from-foreground to-foreground/50"
             />
-            <span className="text-sm font-semibold tracking-tight">App</span>
+            <span className="truncate text-sm font-semibold tracking-tight">App</span>
           </div>
-        ) : (
-          <div
-            aria-hidden
-            className="size-6 rounded-md bg-linear-to-br from-foreground to-foreground/50"
-          />
         )}
 
         {isDesktop && (
           <Button
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-7 shrink-0"
             onClick={() => setExpandedPref((v) => !v)}
             aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           >
