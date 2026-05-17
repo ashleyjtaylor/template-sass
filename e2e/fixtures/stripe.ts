@@ -27,9 +27,19 @@ export async function fillTestCardAndPay(page: Page): Promise<void> {
     await nameField.first().fill('E2E Test')
   }
 
-  // UK postcode — template defaults to en-GB locale + GBP pricing, so
-  // Checkout asks for a postal code in UK format. SW1A 1AA is the
-  // government's published example postcode and always validates.
+  // Stripe Checkout defaults the billing-country to the Stripe account's
+  // country (often US for test accounts), which makes the postcode field
+  // strip non-numeric characters. That turns "SW1A 1AA" into "11" and
+  // fails validation. Switch the country to United Kingdom first so the
+  // form accepts the UK postcode that matches our en-GB / GBP pricing.
+  const country = page.getByLabel(/country( or region)?/i)
+
+  if (await country.count()) {
+    await country.first().selectOption({ label: 'United Kingdom' })
+  }
+
+  // UK postcode — SW1A 1AA is the government's published example
+  // (10 Downing Street) and always passes Stripe's UK postcode validator.
   const postal = page.getByRole('textbox', { name: /(post(al)?( ?code)?|postcode|zip)/i })
 
   if (await postal.count()) {
