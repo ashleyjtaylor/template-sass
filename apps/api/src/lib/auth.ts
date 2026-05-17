@@ -53,6 +53,7 @@ const sharedRequestIdField = {
 }
 
 type UserCreatePayload = { name?: string | null; firstname?: string; lastname?: string }
+type UserUpdatePayload = { name?: string | null; firstname?: string; lastname?: string }
 
 // Prefix better-auth uses for password-reset Verification rows
 // (`reset-password:<token>`). Used to scope our per-email rate limit and
@@ -423,6 +424,29 @@ export const auth = betterAuth({
             data: {
               ...user,
               name: `${firstname ?? ''} ${lastname ?? ''}`.trim()
+            }
+          }
+        }
+      },
+      update: {
+        // Keep the derived `name` in sync when /update-user changes
+        // firstname AND lastname together. Mirrors the create hook so
+        // the field stays canonical (nav, emails) without the SPA
+        // sending `name` itself.
+        //
+        // Skip when:
+        //   - `name` is explicitly supplied (caller knows best).
+        //   - Either component is missing — partial updates would
+        //     clobber the half we don't have. SPA always sends both
+        //     fields together; this guard keeps the invariant local.
+        before: async (user) => {
+          const { name, firstname, lastname } = user as UserUpdatePayload
+          if (name) return undefined
+          if (firstname === undefined || lastname === undefined) return undefined
+          return {
+            data: {
+              ...user,
+              name: `${firstname} ${lastname}`.trim()
             }
           }
         }

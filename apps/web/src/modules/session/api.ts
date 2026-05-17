@@ -79,6 +79,51 @@ export const useSignUp = () => {
   })
 }
 
+export interface UpdateProfileInput {
+  firstname: string
+  lastname: string
+}
+
+// Updates name on the User row via better-auth's /update-user route.
+// firstname/lastname are declared as input-true additionalFields in
+// apps/api/src/lib/auth.ts so they survive the Prisma adapter strip;
+// the api-side databaseHooks.user.update.before then recomposes the
+// derived `name` from the pair. On success we invalidate ['session']
+// so the nav/header reflects the new name immediately.
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: UpdateProfileInput) =>
+      api('/api/auth/update-user', z.unknown(), { method: 'POST', body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSION_KEY })
+  })
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+}
+
+// In-place password change via better-auth's /change-password route.
+// `revokeOtherSessions: true` matches the reset-password posture
+// (revokeSessionsOnPasswordReset in lib/auth.ts) — a successful
+// change evicts every other device. Current device keeps its
+// session; we still invalidate the session query so any cached
+// metadata refreshes.
+export const useChangePassword = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: ChangePasswordInput) =>
+      api('/api/auth/change-password', z.unknown(), {
+        method: 'POST',
+        body: { ...input, revokeOtherSessions: true }
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSION_KEY })
+  })
+}
+
 export const useSignOut = () => {
   const queryClient = useQueryClient()
 
