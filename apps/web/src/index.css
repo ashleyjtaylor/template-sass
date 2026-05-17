@@ -122,4 +122,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwind 4 dropped the implicit pointer cursor on buttons and
+     anchors. Restore it for every interactive element so the whole
+     SPA feels clickable without each call site repeating
+     `cursor-pointer`. Disabled buttons keep the not-allowed cursor. */
+  a,
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
