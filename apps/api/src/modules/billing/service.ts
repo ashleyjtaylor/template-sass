@@ -38,7 +38,10 @@ export async function buildCheckoutSession(params: CheckoutSessionParams) {
   }
 
   const successUrl = `${webBaseUrl()}/dashboard?session_id={CHECKOUT_SESSION_ID}`
-  const cancelUrl = `${webBaseUrl()}/`
+  // Cancel lands the (signed-in) user back on /dashboard, not the
+  // public pricing page. The dashboard's paywall state already shows
+  // the plan cards so they can retry without leaving the app.
+  const cancelUrl = `${webBaseUrl()}/dashboard`
 
   return createStripeCheckout({
     userEntityId: params.userEntityId,

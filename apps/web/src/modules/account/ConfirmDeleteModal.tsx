@@ -17,15 +17,20 @@ export interface ConfirmDeleteModalProps {
   // The signed-in user's email — the typed value must match it before
   // we'll let the user submit. Forces a deliberate, non-mis-click action.
   expectedEmail: string
+  // True for users with a credential Account (email+password). False
+  // for OAuth-only users — the modal then hides the password input and
+  // gates submission on the email match alone.
+  hasPassword: boolean
   pending: boolean
   errorMessage: string | null
-  onConfirm: (input: { password: string }) => void
+  onConfirm: (input: { password?: string }) => void
 }
 
 export function ConfirmDeleteModal({
   open,
   onOpenChange,
   expectedEmail,
+  hasPassword,
   pending,
   errorMessage,
   onConfirm
@@ -43,12 +48,13 @@ export function ConfirmDeleteModal({
   }
 
   const emailMatches = email.trim().toLowerCase() === expectedEmail.toLowerCase()
-  const canSubmit = emailMatches && password.length > 0 && !pending
+  const passwordOk = hasPassword ? password.length > 0 : true
+  const canSubmit = emailMatches && passwordOk && !pending
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!canSubmit) return
-    onConfirm({ password })
+    onConfirm(hasPassword ? { password } : {})
   }
 
   return (
@@ -78,19 +84,24 @@ export function ConfirmDeleteModal({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="confirm-password" className="text-xs font-medium text-muted-foreground">
-              Current password
-            </label>
-            <Input
-              id="confirm-password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={pending}
-            />
-          </div>
+          {hasPassword ? (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="confirm-password"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                Current password
+              </label>
+              <Input
+                id="confirm-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={pending}
+              />
+            </div>
+          ) : null}
 
           {errorMessage && (
             <p role="alert" className="text-xs text-destructive">

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api'
-import { useDeleteAccount } from '@/modules/account/api'
+import { useAccountMethods, useDeleteAccount } from '@/modules/account/api'
 import { ConfirmDeleteModal } from '@/modules/account/ConfirmDeleteModal'
 import { useForgotPassword, useSession } from '@/modules/session/api'
 
@@ -24,13 +24,19 @@ const friendlyError = (err: unknown): string => {
 function AccountPage() {
   const navigate = useNavigate()
   const { user } = useSession()
+  const methods = useAccountMethods()
   const deleteAccount = useDeleteAccount()
   const forgot = useForgotPassword()
   const [modalOpen, setModalOpen] = useState(false)
 
   if (!user) return null
 
-  const handleConfirm = (input: { password: string }) => {
+  // Default to true while methods are loading — keeps the password input
+  // visible (the safe fallback) until we know better. OAuth-only users
+  // briefly see the field, then it disappears on first response.
+  const hasPassword = methods.data?.hasPassword ?? true
+
+  const handleConfirm = (input: { password?: string }) => {
     deleteAccount.mutate(input, {
       onSuccess: () => {
         setModalOpen(false)
@@ -69,21 +75,27 @@ function AccountPage() {
         </p>
       </header>
 
-      <section className="mb-6 rounded-lg border bg-card p-6">
-        <h2 className="text-lg font-semibold">Password</h2>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          We'll email a single-use link to {user.email}. Opening it lets you choose a new password
-          and signs you out of every other session.
-        </p>
-        <Button
-          variant="outline"
-          className="mt-5"
-          onClick={handleResetPassword}
-          disabled={forgot.isPending}
-        >
-          {forgot.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Send reset link'}
-        </Button>
-      </section>
+      {/* Hide the Password section for OAuth-only users — they don't
+        have a password to reset, and the server short-circuits the
+        request anyway. Surfacing the button would just produce a
+        "check your inbox" toast for an email they'll never get. */}
+      {hasPassword ? (
+        <section className="mb-6 rounded-lg border bg-card p-6">
+          <h2 className="text-lg font-semibold">Password</h2>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            We'll email a single-use link to {user.email}. Opening it lets you choose a new password
+            and signs you out of every other session.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-5"
+            onClick={handleResetPassword}
+            disabled={forgot.isPending}
+          >
+            {forgot.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Send reset link'}
+          </Button>
+        </section>
+      ) : null}
 
       <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
         <div className="text-[10px] font-medium uppercase text-destructive/80">Danger zone</div>
@@ -101,6 +113,7 @@ function AccountPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         expectedEmail={user.email}
+        hasPassword={hasPassword}
         pending={deleteAccount.isPending}
         errorMessage={deleteAccount.isError ? friendlyError(deleteAccount.error) : null}
         onConfirm={handleConfirm}

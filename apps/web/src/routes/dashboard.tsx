@@ -3,7 +3,8 @@ import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAccessState } from '@/modules/billing/api'
+import { setLastAuthMethod } from '@/lib/last-auth-method'
+import { useAccessState, useCreateCheckoutSession } from '@/modules/billing/api'
 import { PLANS, PlanCard } from '@/modules/billing/plans'
 import { useSession } from '@/modules/session/api'
 import { VerifyEmailBanner } from '@/modules/session/VerifyEmailBanner'
@@ -12,7 +13,9 @@ import { VerifyEmailBanner } from '@/modules/session/VerifyEmailBanner'
 // arrives as the number 1, not the string '1'. Coerce so the value is
 // always a string regardless of what the URL serializer produced.
 const searchSchema = z.object({
-  verified: z.coerce.string().optional()
+  verified: z.coerce.string().optional(),
+  plan: z.string().optional(),
+  from: z.string().optional()
 })
 
 export const Route = createFileRoute('/dashboard')({
@@ -23,6 +26,7 @@ export const Route = createFileRoute('/dashboard')({
 function DashboardPage() {
   const { user } = useSession()
   const access = useAccessState()
+  const checkout = useCreateCheckoutSession()
   const navigate = useNavigate()
   const search = Route.useSearch()
   const firstname = user?.name.split(' ')[0] ?? 'there'
@@ -46,7 +50,55 @@ function DashboardPage() {
     navigate({ to: '/dashboard', search: () => ({}), replace: true })
   }, [search.verified, navigate])
 
-  if (access.isLoading) {
+  // `?from=google` lands here after a successful Google OAuth round
+  // trip (the /login and /signup buttons embed it in their callback
+  // URLs). Only set the last-used marker on this successful-return
+  // path so cancelled OAuth attempts don't pin the badge to a method
+  // the user never actually used. Strip the param after.
+  useEffect(() => {
+    if (search.from !== 'google') return
+
+    setLastAuthMethod('google')
+    navigate({
+      to: '/dashboard',
+      search: { ...search, from: undefined },
+      replace: true
+    })
+  }, [search, navigate])
+
+  // `?plan=<key>` arrives from the OAuth flow when the user came in via
+  // /signup?plan=... or /login?plan=... and authenticated with Google.
+  // Mirror the existing /signup post-submit logic: if they're not
+  // already paid, kick a checkout-session and hard-navigate to Stripe.
+  // Skip if access is still loading so we don't bounce before knowing
+  // their state, and skip if a checkout is already in flight.
+  useEffect(() => {
+    if (!search.plan) return
+    if (access.isLoading) return
+    if (access.data?.state === 'paid') return
+    if (checkout.isPending) return
+
+    checkout.mutate(
+      { plan: search.plan },
+      {
+        onSuccess: (data) => {
+          window.location.href = data.url
+        },
+        onError: () => {
+          navigate({ to: '/dashboard', search: () => ({}), replace: true })
+        }
+      }
+    )
+  }, [search.plan, access.isLoading, access.data?.state, checkout, navigate])
+
+  // While bouncing to Stripe (?plan present, user unpaid), render the
+  // skeleton instead of flashing the paywall card for a frame. The
+  // checkout effect above fires window.location.href as soon as the
+  // session is created.
+  const isBouncingToCheckout =
+    Boolean(search.plan) && access.data?.state !== 'paid' && access.data?.state !== 'past_due'
+
+  if (access.isLoading || isBouncingToCheckout) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-12">
         <Skeleton className="h-8 w-48" />

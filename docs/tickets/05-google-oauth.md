@@ -78,6 +78,17 @@ Plan agreed before implementation. Captures intent so future readers can compare
 - Dockerfile — unchanged.
 - Deploy DAG — unchanged.
 
+## OAuth-only user flows (added late, in-PR)
+
+Folded in once we realised that the password-reset and account-delete flows would break for Google-only users (no credential Account row):
+
+- New `GET /api/account/methods` → `{ hasPassword, hasGoogle }`, used by the SPA to branch.
+- `deleteAccount` service: if no credential Account row, accept session-cookie alone (skip password check). Bad/missing password still rejects for credential users.
+- `/request-password-reset` `before` hook: after finding the user, short-circuit with silent 200 if they have no credential Account. No reset email sent, anti-enumeration preserved.
+- `/account` page: hides the Password section when `!hasPassword`.
+- `ConfirmDeleteModal`: hides the password input when `!hasPassword`, gates submit on email match alone.
+- `useDeleteAccount` input: `password?: string`.
+
 ## Out of scope (deliberately)
 
 - Settings page to unlink Google from an account.

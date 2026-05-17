@@ -112,3 +112,12 @@ describe('better-auth sendVerificationEmail wiring', () => {
     expect(auth.options.emailVerification?.expiresIn).toBe(60 * 60 * 24)
   })
 })
+
+describe('better-auth account-linking config', () => {
+  it('enables account linking with google as a trusted provider', async () => {
+    const { auth } = await import('@/lib/auth.js')
+
+    expect(auth.options.account?.accountLinking?.enabled).toBe(true)
+    expect(auth.options.account?.accountLinking?.trustedProviders).toContain('google')
+  })
+})

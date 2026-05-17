@@ -3,7 +3,7 @@ import { isMailerConfigured, sendEmailVerification, sendPasswordReset } from '@t
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api'
-import { env } from '@/env.js'
+import { env, isGoogleConfigured } from '@/env.js'
 import { getRequestId, logger } from '@/lib/logger.js'
 
 const entityId = (prefix: string) => () => `${prefix}${crypto.randomUUID()}`
@@ -110,6 +110,34 @@ export const auth = betterAuth({
       }
     }
   },
+  // Google OAuth — only registered when both credentials are populated.
+  // Fresh forks without Google creds boot cleanly; the providers
+  // endpoint reports `google: false` and the SPA hides the button.
+  // `mapProfileToUser` populates our additional firstname/lastname
+  // fields from Google's given_name/family_name, plus the existing
+  // User.image column from the profile picture.
+  ...(isGoogleConfigured()
+    ? {
+        socialProviders: {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            mapProfileToUser: (profile: {
+              given_name?: string
+              family_name?: string
+              picture?: string
+            }) => ({
+              firstname: profile.given_name ?? '',
+              lastname: profile.family_name ?? '',
+              // Spread the optional `image` key only when Google supplied
+              // one. Under exactOptionalPropertyTypes, returning
+              // `image: undefined` is not the same as omitting the key.
+              ...(profile.picture ? { image: profile.picture } : {})
+            })
+          }
+        }
+      }
+    : {}),
   // Per-IP global rate limit on /request-password-reset (memory-backed,
   // fine for a single API task). Per-email throttling is enforced in
   // the `before` hook below.
@@ -136,12 +164,29 @@ export const auth = betterAuth({
 
         const user = await prisma.user.findUnique({
           where: { email },
-          select: { id: true }
+          select: {
+            id: true,
+            accounts: {
+              where: { providerId: 'credential' },
+              select: { id: true },
+              take: 1
+            }
+          }
         })
 
         // No user → don't run cleanup or rate-limit. better-auth's normal
         // flow handles the unknown-email case as a silent 200.
         if (!user) return
+
+        // OAuth-only user (no credential Account row). better-auth's
+        // downstream resetPassword would silently create a credential
+        // Account on token-redeem, giving the user a password they
+        // never asked for. Short-circuit with a silent 200 instead —
+        // same shape as the unknown-email path, preserving anti-
+        // enumeration.
+        if (user.accounts.length === 0) {
+          return { status: true }
+        }
 
         // Per-email rate limit: max 3 reset requests per user per hour.
         // Counts Verification rows created in the window — these get deleted
@@ -260,6 +305,20 @@ export const auth = betterAuth({
     additionalFields: {
       entityId: sharedEntityIdField('acct_'),
       requestId: sharedRequestIdField
+    },
+    // Auto-link a new Google sign-in to an existing email+password user
+    // when the email matches. Google is trusted because they already
+    // verified the email — accepting their verification means no
+    // duplicate User rows on the same email and no enumeration error
+    // when an existing email signs in with Google the first time.
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ['google'],
+      // Backfill the User row with values from Google's userinfo when an
+      // existing email+password user links Google for the first time.
+      // Picks up name / image so a previously-unset avatar shows up
+      // after the link without the user having to edit anything.
+      updateUserInfoOnLink: true
     }
   },
   verification: {

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { api } from '@/lib/api'
+import { setLastAuthMethod } from '@/lib/last-auth-method'
 import { sessionSchema } from './schemas'
 
 const SESSION_KEY = ['session'] as const
@@ -40,7 +41,10 @@ export const useSignIn = () => {
   return useMutation({
     mutationFn: (input: SignInInput) =>
       api('/api/auth/sign-in/email', z.unknown(), { method: 'POST', body: input }),
-    onSuccess: () => invalidateAfterAuth(queryClient)
+    onSuccess: () => {
+      setLastAuthMethod('email')
+      return invalidateAfterAuth(queryClient)
+    }
   })
 }
 
@@ -68,7 +72,10 @@ export const useSignUp = () => {
           callbackURL: `${window.location.origin}/dashboard?verified=1`
         }
       }),
-    onSuccess: () => invalidateAfterAuth(queryClient)
+    onSuccess: () => {
+      setLastAuthMethod('email')
+      return invalidateAfterAuth(queryClient)
+    }
   })
 }
 
@@ -127,4 +134,52 @@ export const useResendVerification = () =>
         // signed-out clicker case) to fire a success toast.
         body: { email: input.email, callbackURL: `${window.location.origin}/dashboard?verified=1` }
       })
+  })
+
+const providersSchema = z.object({ google: z.boolean() })
+
+// Lists the auth providers the API can serve. The SPA renders the
+// Google button conditionally on `data?.google === true`. Cached
+// aggressively — this is effectively static config that only changes
+// on a deploy.
+export const useAuthProviders = () =>
+  useQuery({
+    queryKey: ['auth', 'providers'] as const,
+    queryFn: () => api('/api/auth/providers', providersSchema),
+    staleTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false
+  })
+
+export interface SignInWithGoogleInput {
+  callbackURL: string
+  errorCallbackURL: string
+}
+
+const socialSignInResponse = z.object({
+  url: z.string().url().optional(),
+  redirect: z.boolean().optional()
+})
+
+// Kicks off the OAuth handshake. better-auth returns a `url` to
+// Google's consent screen; the caller hard-navigates to it. We do NOT
+// set the last-used marker here — clicking the button doesn't mean
+// the user actually completes OAuth. Instead, the caller appends
+// `?from=google` to the callbackURL so /dashboard can set the marker
+// only on the successful-return path.
+export const useSignInWithGoogle = () =>
+  useMutation({
+    mutationFn: async (input: SignInWithGoogleInput) => {
+      const result = await api('/api/auth/sign-in/social', socialSignInResponse, {
+        method: 'POST',
+        body: {
+          provider: 'google',
+          callbackURL: input.callbackURL,
+          errorCallbackURL: input.errorCallbackURL
+        }
+      })
+      if (result.url) {
+        window.location.href = result.url
+      }
+      return result
+    }
   })
