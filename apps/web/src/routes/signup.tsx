@@ -29,6 +29,10 @@ const friendlyError = (err: unknown): string => {
     if (err.status === 422 || err.code === 'UNPROCESSABLE_ENTITY')
       return 'That email is already in use.'
     if (err.status === 400) return 'Please check the form for missing or invalid fields.'
+    // Per-IP signup cap (5 / hour). Hit most often on shared wifi where
+    // several genuine signups come from one egress IP. Bias the copy
+    // toward "wait an hour" — that's the actual window.
+    if (err.status === 429) return 'Too many signups from this device. Wait an hour and try again.'
     if (err.status >= 500) return 'Something went wrong on our end. Try again in a moment.'
   }
 

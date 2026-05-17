@@ -4,6 +4,7 @@ import { type FormEvent, useState } from 'react'
 import { z } from 'zod'
 import { AuthCardLayout, AuthField } from '@/components/layout/AuthCardLayout'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useResetPassword } from '@/modules/session/api'
 
@@ -33,8 +34,15 @@ function ResetPasswordPage() {
   // Errors thrown by the reset-password POST itself (expired, used,
   // weak password) collapse into the same view: we don't distinguish
   // expired vs used vs invalid to avoid leaking token state.
+  //
+  // 429 is the one exception — the token may still be perfectly valid,
+  // the user just retried too fast. Falling into InvalidLinkView there
+  // would tell them to "request a new link" when in fact the link is
+  // fine and they should just wait. Render the form with an alert
+  // instead so the next attempt re-submits the same (good) token.
   const token = search.token
-  if (!token || search.error || reset.isError) {
+  const isRateLimited = reset.error instanceof ApiError && reset.error.status === 429
+  if (!token || search.error || (reset.isError && !isRateLimited)) {
     return <InvalidLinkView />
   }
 
@@ -72,12 +80,12 @@ function ResetPasswordPage() {
         </>
       }
     >
-      {localError && (
+      {(localError || isRateLimited) && (
         <div
           role="alert"
           className="mb-5 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-xs text-destructive"
         >
-          {localError}
+          {localError ?? 'Too many attempts. Wait a few minutes and try again.'}
         </div>
       )}
 
