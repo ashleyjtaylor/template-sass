@@ -10,3 +10,10 @@ export {
 } from './env.js'
 export { type CreatePortalSessionInput, createPortalSession } from './portal.js'
 export type { AccessState, AccessStateResult, Entitlements, SubscriptionStatus } from './types.js'
+export {
+  type ChangeSubscriptionPlanInput,
+  changeSubscriptionPlan,
+  type PreviewPlanChangeInput,
+  type PreviewPlanChangeResult,
+  previewPlanChange
+} from './upgrade.js'
