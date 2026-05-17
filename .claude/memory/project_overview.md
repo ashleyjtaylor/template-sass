@@ -106,7 +106,7 @@ CORS: explicit allowlist of frontend origins via `CORS_ORIGINS` env var.
 - **Stripe Customer Portal** for self-service (change card, cancel, view invoices)
 - **`getUserAccessState(userId)`** is the single resolver: returns `paid` for active/trialing, `past_due` while Stripe Smart-Retries, `paywalled` otherwise
 - **Webhook**: handles `checkout.session.completed` (sets `User.stripeCustomerId`), `customer.subscription.created/updated` (upserts the mirror), `customer.subscription.deleted` (marks canceled). Everything inline — no worker, no queue
-- **`isBillingConfigured()`**: returns false until `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO` are all set. Until then `/api/billing/*` 503s with a clear `BillingNotConfigured` reason
+- **`isBillingConfigured()`**: returns false until `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO`, and `STRIPE_PRICE_ID_MAX` are all set. Until then `/api/billing/*` 503s with a clear `BillingNotConfigured` reason
 
 ---
 

@@ -11,15 +11,21 @@ const app = new App()
 // loudly with a clear error message.
 const imageTag = app.node.tryGetContext('imageTag') || 'placeholder'
 
-// Per-env Stripe Pro price id. Forks set via cdk.json or
-// `-c stripePriceIdPro.staging=price_…`. Empty until configured — the
-// billing module's `isBillingConfigured()` predicate returns a 503 from
-// /api/billing/* in the meantime.
-const stripePriceIdProFor = (env: EnvName): string | undefined => {
-  const value = app.node.tryGetContext(`stripePriceIdPro.${env}`)
+// Per-env Stripe price ids. Forks set via cdk.json or
+// `-c stripePriceIdPro.staging=price_…` (and `stripePriceIdMax.<env>`
+// for the Max plan). Both must be populated for the billing module's
+// `isBillingConfigured()` predicate to flip true — until then,
+// /api/billing/* returns a 503.
+const stripePriceIdContextFor =
+  (key: 'stripePriceIdPro' | 'stripePriceIdMax') =>
+  (env: EnvName): string | undefined => {
+    const value = app.node.tryGetContext(`${key}.${env}`)
 
-  return typeof value === 'string' && value.length > 0 ? value : undefined
-}
+    return typeof value === 'string' && value.length > 0 ? value : undefined
+  }
+
+const stripePriceIdProFor = stripePriceIdContextFor('stripePriceIdPro')
+const stripePriceIdMaxFor = stripePriceIdContextFor('stripePriceIdMax')
 
 // Per-env From address for outbound email (e.g. password reset). Forks
 // set via cdk.json or `-c mailFrom.staging=noreply@staging.example.com`.
@@ -70,6 +76,7 @@ for (const env of envs) {
     appSecrets: data.appSecrets,
     imageTag,
     stripePriceIdPro: stripePriceIdProFor(env),
+    stripePriceIdMax: stripePriceIdMaxFor(env),
     ...(data.sesIdentity !== undefined && { sesIdentity: data.sesIdentity }),
     ...(mailFrom !== undefined && { mailFrom })
   })

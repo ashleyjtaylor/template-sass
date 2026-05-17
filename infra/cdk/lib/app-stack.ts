@@ -46,6 +46,7 @@ export interface AppStackProps extends StackProps {
   // `stripePriceIdPro.<env>`. Empty string until configured; the billing
   // module's `isBillingConfigured()` predicate gates real Stripe calls.
   stripePriceIdPro?: string
+  stripePriceIdMax?: string
   // SES identity created by the data-stack when `-c mailFrom.<env>=…`
   // is set. When present together with `mailFrom`, the API task gets
   // MAIL_TRANSPORT=ses, MAIL_FROM=<address>, and an IAM grant to
@@ -69,6 +70,7 @@ export class AppStack extends Stack {
       appSecrets,
       imageTag,
       stripePriceIdPro,
+      stripePriceIdMax,
       sesIdentity,
       mailFrom
     } = props
@@ -159,6 +161,7 @@ export class AppStack extends Stack {
         WEB_BASE_URL: `https://${webDistribution.distributionDomainName}`,
         STRIPE_PORTAL_RETURN_URL: `https://${webDistribution.distributionDomainName}`,
         STRIPE_PRICE_ID_PRO: stripePriceIdPro ?? '',
+        STRIPE_PRICE_ID_MAX: stripePriceIdMax ?? '',
         // Mailer — APP_ENV (already set above) selects the transport
         // (`local` → Mailpit, `staging`/`production` → SES). MAIL_FROM
         // empty means "mailer not configured": `isMailerConfigured()`
