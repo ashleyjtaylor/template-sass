@@ -13,13 +13,15 @@ const schema = z.object({
   STRIPE_API_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
   STRIPE_PRICE_ID_PRO: z.string().default(''),
+  STRIPE_PRICE_ID_MAX: z.string().default(''),
   STRIPE_PORTAL_RETURN_URL: z.string().default('http://localhost:5174')
 })
 
 export const env = schema.parse(process.env)
 
 const PLAN_PRICE_IDS: Record<string, string> = {
-  pro: env.STRIPE_PRICE_ID_PRO
+  pro: env.STRIPE_PRICE_ID_PRO,
+  max: env.STRIPE_PRICE_ID_MAX
 }
 
 export function priceIdForPlan(plan: string): string {
@@ -37,6 +39,7 @@ export function isBillingConfigured(): boolean {
   return (
     env.STRIPE_API_KEY.length > 0 &&
     env.STRIPE_WEBHOOK_SECRET.length > 0 &&
-    env.STRIPE_PRICE_ID_PRO.length > 0
+    env.STRIPE_PRICE_ID_PRO.length > 0 &&
+    env.STRIPE_PRICE_ID_MAX.length > 0
   )
 }

@@ -21,6 +21,7 @@ export default defineConfig({
       STRIPE_API_KEY: 'sk_test_billing_integration',
       STRIPE_WEBHOOK_SECRET: 'whsec_test_billing_integration',
       STRIPE_PRICE_ID_PRO: 'price_test_pro',
+      STRIPE_PRICE_ID_MAX: 'price_test_max',
       STRIPE_PORTAL_RETURN_URL: 'http://localhost:5174',
       WEB_BASE_URL: 'http://localhost:5174',
       // Mailer — APP_ENV defaults to 'local' (selecting SMTP). Tests

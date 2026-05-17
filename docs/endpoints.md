@@ -45,11 +45,11 @@ Each row in `user` / `session` / `account` / `verification` carries a prefixed `
 
 Stripe Checkout + Customer Portal + access-state resolver. **Per-user subscription** — one `Subscription` row per `User`. The Stripe customer is created lazily during Checkout; the webhook handler links it to the user via the `userEntityId` carried in `metadata`.
 
-The billing routes are fork-opt-in: until `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PRICE_ID_PRO` are populated, `POST /billing/checkout-session` and `POST /billing/portal-session` return **500** with `details.reason: 'BillingNotConfigured'`. `GET /billing/access-state` always works (reads only the local DB).
+The billing routes are fork-opt-in: until `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO`, and `STRIPE_PRICE_ID_MAX` are populated, `POST /billing/checkout-session` and `POST /billing/portal-session` return **500** with `details.reason: 'BillingNotConfigured'`. `GET /billing/access-state` always works (reads only the local DB).
 
 | Route | Method | Auth | Purpose |
 |---|---|---|---|
-| `/api/billing/checkout-session` | POST | session | Body: `{ plan: string }` (e.g. `'pro'`). Maps to a Stripe price id via `PLAN_PRICE_IDS` in `packages/billing/src/env.ts`. Response: `{ url }`. **409** `AlreadySubscribed` if the user already has an active / trialing / past_due subscription. |
+| `/api/billing/checkout-session` | POST | session | Body: `{ plan: string }` (`'pro'` or `'max'`). Maps to a Stripe price id via `PLAN_PRICE_IDS` in `packages/billing/src/env.ts`. Response: `{ url }`. **409** `AlreadySubscribed` if the user already has an active / trialing / past_due subscription. |
 | `/api/billing/portal-session` | POST | session | Mint a Stripe Customer Portal session. Response: `{ url }`. **409** `NoStripeCustomer` if the user has never completed a Checkout. |
 | `/api/billing/access-state` | GET | session | Returns `{ state: 'paid' \| 'past_due' \| 'paywalled', subscription?: { planKey, status, currentPeriodEnd, cancelAtPeriodEnd } }`. Used by the `/dashboard` route to render the paywall vs the product. |
 

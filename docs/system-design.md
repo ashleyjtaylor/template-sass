@@ -98,7 +98,7 @@ graph LR
 
 ### Stripe (optional)
 
-Per-user Stripe subscription. Fork-opt-in — until the Stripe secrets are populated and `STRIPE_PRICE_ID_PRO` context flag is supplied, the billing routes return a clean "billing not configured" 500 and the dashboard renders the paywall state.
+Per-user Stripe subscription. Fork-opt-in — until the Stripe secrets are populated and both the `STRIPE_PRICE_ID_PRO` + `STRIPE_PRICE_ID_MAX` context flags are supplied, the billing routes return a clean "billing not configured" 500 and the dashboard renders the paywall state.
 
 ```
 sign up                          /signup → POST /api/auth/sign-up/email
@@ -118,7 +118,7 @@ SPA fetches access-state         /dashboard → flips paywalled→paid
 - **`packages/billing`** — Stripe SDK wrapper. `getUserAccessState(userId)` is the sole paywall resolver (`paid | past_due | paywalled`). Checkout + Customer Portal helpers. `isBillingConfigured()` predicate gates real Stripe-touching routes.
 - **`subscription` table** — Stripe mirror, one row per user (`userId @unique`), UPSERTed by the webhook.
 - **`stripe_event` table** — idempotency anchor. Insert before processing; unique-id collision short-circuits Stripe's retries.
-- **CDK secrets**: `template-${env}-stripe-secrets` holds `apiKey` + `webhookSecret` (operator-supplied; empty by default). Injected as `STRIPE_API_KEY` + `STRIPE_WEBHOOK_SECRET`. `STRIPE_PRICE_ID_PRO` is fork-supplied via `-c stripePriceIdPro.<env>=price_…`.
+- **CDK secrets**: `template-${env}-stripe-secrets` holds `apiKey` + `webhookSecret` (operator-supplied; empty by default). Injected as `STRIPE_API_KEY` + `STRIPE_WEBHOOK_SECRET`. Price ids are fork-supplied via `-c stripePriceIdPro.<env>=price_…` and `-c stripePriceIdMax.<env>=price_…`.
 - **Customer Portal** handles change-card / cancel / invoices — we don't reimplement any of it. The dashboard's "Manage billing" button mints a Portal session.
 - **Local dev** uses Stripe test mode + the Stripe CLI (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`). See [`docs/runbooks/billing-smoke.md`](runbooks/billing-smoke.md).
 

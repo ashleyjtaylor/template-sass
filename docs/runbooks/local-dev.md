@@ -81,6 +81,7 @@ Then populate `apps/api/.env` from the test-mode dashboard:
 - `STRIPE_API_KEY=sk_test_…` — Developers → API keys
 - `STRIPE_WEBHOOK_SECRET=whsec_…` — printed by `stripe listen` on startup
 - `STRIPE_PRICE_ID_PRO=price_…` — Products → Add a recurring "Pro" product → copy the price id
+- `STRIPE_PRICE_ID_MAX=price_…` — Products → Add a recurring "Max" product → copy the price id
 - `STRIPE_PORTAL_RETURN_URL=http://localhost:5174`
 - `WEB_BASE_URL=http://localhost:5174`
 

@@ -15,6 +15,7 @@ export default defineConfig({
       STRIPE_API_KEY: 'sk_test_billing_unit_tests',
       STRIPE_WEBHOOK_SECRET: 'whsec_billing_unit_tests',
       STRIPE_PRICE_ID_PRO: 'price_billing_unit_tests',
+      STRIPE_PRICE_ID_MAX: 'price_billing_unit_tests',
       STRIPE_PORTAL_RETURN_URL: 'http://localhost:5174'
     }
   }
