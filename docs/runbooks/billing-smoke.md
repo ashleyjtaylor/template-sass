@@ -13,7 +13,7 @@ The playbook assumes a freshly-checked-out branch with the local Compose service
 ## One-time Stripe test-mode setup
 
 1. **Test API key**. Stripe dashboard → Developers → API keys → copy the **Secret key** (`sk_test_…`).
-2. **Pro product**. Products → **Add product**. Name `Pro`. Pricing model: recurring, monthly, $29 USD (any amount works). Save. Copy the price's `price_…` id.
+2. **Pro product**. Products → **Add product**. Name `Pro`. Pricing model: recurring, monthly, £20 GBP (matches the price shown on the SPA pricing card — change `apps/web/src/modules/billing/plans.tsx` if you want a different amount or currency). Save. Copy the price's `price_…` id.
 3. **Webhook signing secret**. In a dedicated terminal:
    ```bash
    stripe listen --forward-to localhost:3000/api/webhooks/stripe

@@ -27,10 +27,13 @@ export async function fillTestCardAndPay(page: Page): Promise<void> {
     await nameField.first().fill('E2E Test')
   }
 
-  const postal = page.getByRole('textbox', { name: /(zip|postal)/i })
+  // UK postcode — template defaults to en-GB locale + GBP pricing, so
+  // Checkout asks for a postal code in UK format. SW1A 1AA is the
+  // government's published example postcode and always validates.
+  const postal = page.getByRole('textbox', { name: /(post(al)?( ?code)?|postcode|zip)/i })
 
   if (await postal.count()) {
-    await postal.first().fill('12345')
+    await postal.first().fill('SW1A 1AA')
   }
 
   // Stripe Link's "Save my information for faster checkout" checkbox is

@@ -30,6 +30,11 @@ export async function createCheckoutSession(
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
+    // Pin the Checkout UI language. Template defaults to en-GB to match
+    // the SPA's £-denominated pricing card. Forks targeting other
+    // markets should change this in lockstep with the Stripe price's
+    // currency and plans.tsx.
+    locale: 'en-GB',
     // Card-only Checkout. Without this, Stripe surfaces every payment
     // method enabled at the account level (Klarna, Revolut Pay, Amazon
     // Pay, Link, etc.) behind an accordion. Card-only is the standard
