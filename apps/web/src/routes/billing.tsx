@@ -26,8 +26,8 @@ function BillingPage() {
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Billing</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Subscription & payments</h1>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Your current plan and renewal details. Card changes, invoices and cancellations are
-          handled by Stripe.
+          Your current plan and renewal details. Plan switches, card changes, invoices and
+          cancellations are handled by Stripe.
         </p>
       </header>
 
@@ -116,7 +116,7 @@ function SubscriptionCard({
         <div>
           <p className="text-sm font-medium">Manage your subscription</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Update card, view invoices, cancel — all handled by Stripe.
+            Change plan, update card, view invoices, cancel — all handled by Stripe.
           </p>
         </div>
         <Button onClick={onManage} disabled={managePending}>
