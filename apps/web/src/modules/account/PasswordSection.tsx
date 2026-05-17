@@ -99,7 +99,7 @@ export function PasswordSection({ email }: PasswordSectionProps) {
       : null
 
   return (
-    <section className="mb-6 rounded-lg border bg-card p-6">
+    <section className="rounded-lg border bg-card p-6">
       <h2 className="text-lg font-semibold">Password</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Change your password here. Updating it signs you out of every other device.

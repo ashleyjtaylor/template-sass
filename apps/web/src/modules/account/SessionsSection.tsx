@@ -42,7 +42,7 @@ export function SessionsSection() {
   const hasOthers = ordered.some((s) => s.entityId !== currentEntityId)
 
   return (
-    <section className="mb-6 rounded-lg border bg-card p-6">
+    <section className="rounded-lg border bg-card p-6">
       <h2 className="text-lg font-semibold">Active sessions</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Devices currently signed in to your account. Sign out of any you don't recognise.

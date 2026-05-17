@@ -36,6 +36,9 @@ export function DeleteAccountSection({ email, hasPassword }: DeleteAccountSectio
     })
   }
 
+  // Standalone destructive card — not collapsed into an accordion.
+  // Kept always-visible below the Security accordions so destructive
+  // actions read as distinct from the rest of the surface.
   return (
     <>
       <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
@@ -46,7 +49,7 @@ export function DeleteAccountSection({ email, hasPassword }: DeleteAccountSectio
           refunded for the remainder of your current billing period.
         </p>
         <Button variant="destructive" className="mt-5" onClick={() => setModalOpen(true)}>
-          Delete account
+          Permanently delete account
         </Button>
       </section>
 

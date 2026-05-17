@@ -15,17 +15,15 @@ function SecurityTab() {
 
   if (!user) return null
 
-  // Default to true while methods are loading so the password form
+  // Default to true while methods are loading so the password section
   // doesn't flash off-then-on for the common email+password case.
-  // OAuth-only users briefly see the form, then it disappears on the
-  // first response.
   const hasPassword = methods.data?.hasPassword ?? true
 
   return (
-    <>
-      {hasPassword ? <PasswordSection email={user.email} /> : null}
+    <div className="space-y-6">
+      {hasPassword && <PasswordSection email={user.email} />}
       <SessionsSection />
       <DeleteAccountSection email={user.email} hasPassword={hasPassword} />
-    </>
+    </div>
   )
 }
