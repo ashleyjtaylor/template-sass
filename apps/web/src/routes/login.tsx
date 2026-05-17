@@ -11,7 +11,9 @@ import { useSignIn } from '@/modules/session/api'
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
-  verified: z.string().optional()
+  // TanStack Router's default parser turns `?verified=1` into the number
+  // 1; coerce so the value is always string-shaped downstream.
+  verified: z.coerce.string().optional()
 })
 
 export const Route = createFileRoute('/login')({
@@ -43,6 +45,8 @@ function LoginPage() {
     if (search.verified !== '1') return
 
     toast.success('Email verified', {
+      // Stable id dedupes when React StrictMode double-invokes in dev.
+      id: 'email-verified',
       description: 'Sign in to continue.'
     })
     navigate({

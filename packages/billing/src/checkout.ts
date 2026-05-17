@@ -36,6 +36,12 @@ export async function createCheckoutSession(
     // SaaS default and keeps the e2e flow deterministic. Forks that
     // want multi-method checkout can remove this line.
     payment_method_types: ['card'],
+    // Explicit override of the Stripe Dashboard's "Phone number" toggle
+    // (Settings → Checkout & Payment Links). The API value takes
+    // precedence — without this, accounts with the dashboard toggle on
+    // get a mandatory phone field on the Checkout page, which derails
+    // the e2e suite and adds friction the template doesn't need.
+    phone_number_collection: { enabled: false },
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,

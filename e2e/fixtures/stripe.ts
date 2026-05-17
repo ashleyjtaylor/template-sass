@@ -33,5 +33,16 @@ export async function fillTestCardAndPay(page: Page): Promise<void> {
     await postal.first().fill('12345')
   }
 
+  // Phone is only rendered when the account's Checkout settings have
+  // "Phone number" enabled and the API didn't override with
+  // phone_number_collection: { enabled: false }. The template now sets
+  // that override (see packages/billing/src/checkout.ts), but the fill
+  // stays as a defensive fallback for forks that want phone collection.
+  const phone = page.getByRole('textbox', { name: /phone/i })
+
+  if (await phone.count()) {
+    await phone.first().fill('5555550123')
+  }
+
   await page.getByRole('button', { name: /(pay|subscribe|start trial)/i }).click()
 }

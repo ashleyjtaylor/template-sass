@@ -8,8 +8,11 @@ import { PLANS, PlanCard } from '@/modules/billing/plans'
 import { useSession } from '@/modules/session/api'
 import { VerifyEmailBanner } from '@/modules/session/VerifyEmailBanner'
 
+// TanStack Router's default search parser is JSON-aware, so `?verified=1`
+// arrives as the number 1, not the string '1'. Coerce so the value is
+// always a string regardless of what the URL serializer produced.
 const searchSchema = z.object({
-  verified: z.string().optional()
+  verified: z.coerce.string().optional()
 })
 
 export const Route = createFileRoute('/dashboard')({
@@ -25,15 +28,22 @@ function DashboardPage() {
   const firstname = user?.name.split(' ')[0] ?? 'there'
 
   // `?verified=1` is set by better-auth's GET /api/auth/verify-email
-  // redirect (configured via the resend's `callbackURL`). Fire the toast
-  // exactly once, then strip the param so a refresh doesn't re-toast.
+  // redirect (configured via the signup/resend callbackURL). Fire the
+  // toast exactly once, then strip the param so a refresh doesn't re-
+  // toast. The function form of `search` is the reliable way to clear
+  // — passing `{}` directly can leave the param in place because the
+  // route's validateSearch keeps the optional key.
   useEffect(() => {
     if (search.verified !== '1') return
 
     toast.success('Email verified', {
+      // Stable id dedupes the toast when React StrictMode double-invokes
+      // the effect in dev — Sonner reuses the existing toast rather
+      // than rendering a second one.
+      id: 'email-verified',
       description: 'Thanks — your email address is confirmed.'
     })
-    navigate({ to: '/dashboard', search: {}, replace: true })
+    navigate({ to: '/dashboard', search: () => ({}), replace: true })
   }, [search.verified, navigate])
 
   if (access.isLoading) {
