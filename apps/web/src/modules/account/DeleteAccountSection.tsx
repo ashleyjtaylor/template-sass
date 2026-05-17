@@ -36,19 +36,20 @@ export function DeleteAccountSection({ email, hasPassword }: DeleteAccountSectio
     })
   }
 
+  // Renders inside an AccordionContent on /account/security — own
+  // wrapper + heading live on the accordion shell. The destructive
+  // treatment is applied to the AccordionItem itself, not here.
   return (
     <>
-      <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-6">
-        <div className="text-[10px] font-medium uppercase text-destructive/80">Danger zone</div>
-        <h2 className="mt-1 text-lg font-semibold">Delete account</h2>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+      <div>
+        <p className="max-w-xl text-sm text-muted-foreground">
           Permanently deletes your account and cancels any active subscription. You won't be
           refunded for the remainder of your current billing period.
         </p>
         <Button variant="destructive" className="mt-5" onClick={() => setModalOpen(true)}>
-          Delete account
+          Permanently delete account
         </Button>
-      </section>
+      </div>
 
       <ConfirmDeleteModal
         open={modalOpen}
