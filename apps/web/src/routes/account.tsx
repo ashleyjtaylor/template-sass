@@ -17,7 +17,7 @@ function AccountLayout() {
   if (!user) return null
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
+    <div className="mx-auto max-w-3xl px-6 py-12">
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Account</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Settings</h1>
