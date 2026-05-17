@@ -47,7 +47,11 @@ export async function signUpProgrammatic(user: NewUser): Promise<{
       password: user.password,
       firstname: user.firstname,
       lastname: user.lastname,
-      name: `${user.firstname} ${user.lastname}`
+      name: `${user.firstname} ${user.lastname}`,
+      // Mirrors useSignUp's body in apps/web — without this the
+      // verification email's link would redirect to the API origin
+      // after verification instead of the SPA's /dashboard.
+      callbackURL: `${WEB_URL}/dashboard?verified=1`
     }
   })
 

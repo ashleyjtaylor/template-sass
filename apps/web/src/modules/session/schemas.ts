@@ -5,7 +5,8 @@ import { z } from 'zod'
 export const sessionUserSchema = z.object({
   entityId: z.string(),
   email: z.string(),
-  name: z.string()
+  name: z.string(),
+  emailVerified: z.boolean()
 })
 
 export type SessionUser = z.infer<typeof sessionUserSchema>

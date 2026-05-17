@@ -1,12 +1,8 @@
 name: e2e
 
-# Auto-triggers paused. The signup-paywall spec needs working Stripe
-# test secrets (STRIPE_TEST_API_KEY, STRIPE_TEST_PRICE_ID_PRO) wired
-# into repo Actions secrets before the suite is reliable on push/PR.
-# Re-add `push:` and `pull_request:` triggers under `on:` once the
-# secrets are in place. Until then this workflow only runs from the
-# Actions UI ("Run workflow" button).
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -60,8 +56,8 @@ jobs:
       MAIL_FROM: noreply@localhost
       MAIL_SMTP_HOST: localhost
       MAIL_SMTP_PORT: 1025
-      STRIPE_API_KEY: ${{ secrets.STRIPE_TEST_API_KEY }}
-      STRIPE_PRICE_ID_PRO: ${{ secrets.STRIPE_TEST_PRICE_ID_PRO }}
+      STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+      STRIPE_PRICE_ID_PRO: ${{ secrets.STRIPE_PRICE_ID_PRO }}
       STRIPE_PORTAL_RETURN_URL: http://localhost:5174
     steps:
       - uses: actions/checkout@v6.0.2
@@ -116,26 +112,40 @@ jobs:
             | sudo tar -xz -C /usr/local/bin stripe
           stripe --version
 
-      # Start `stripe listen` in the background. `--print-secret` outputs
-      # the dynamic webhook signing secret on stdout; we capture it into
-      # the env so the API can verify forwarded webhook signatures.
-      # The CLI keeps running until the workflow ends.
-      - name: Start Stripe webhook forwarder
+      # Two-step Stripe CLI handshake — `--print-secret` prints the
+      # signing secret and **exits**, it does not start a listener. So:
+      # 1) capture the secret to GITHUB_ENV (subsequent steps inherit it)
+      # 2) start a separate, long-running `stripe listen` to forward
+      #    test-mode webhook events into the api process. Without the
+      #    second step the api receives nothing and the subscription
+      #    mirror never gets populated.
+      - name: Capture Stripe webhook signing secret
         run: |
-          stripe listen \
-            --api-key "$STRIPE_API_KEY" \
-            --forward-to http://localhost:3000/api/webhooks/stripe \
-            --print-secret > /tmp/stripe-webhook-secret &
-          # Wait for the secret to be written (CLI takes ~1s to handshake).
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            if [ -s /tmp/stripe-webhook-secret ]; then break; fi
-            sleep 1
-          done
-          if ! [ -s /tmp/stripe-webhook-secret ]; then
-            echo "Stripe CLI did not produce a webhook secret within 10s"
+          SECRET=$(stripe listen --api-key "$STRIPE_API_KEY" --print-secret)
+          if [ -z "$SECRET" ]; then
+            echo "Stripe CLI returned an empty webhook secret"
             exit 1
           fi
-          echo "STRIPE_WEBHOOK_SECRET=$(head -n1 /tmp/stripe-webhook-secret)" >> "$GITHUB_ENV"
+          echo "STRIPE_WEBHOOK_SECRET=$SECRET" >> "$GITHUB_ENV"
+
+      - name: Start Stripe webhook forwarder
+        run: |
+          nohup stripe listen \
+            --api-key "$STRIPE_API_KEY" \
+            --forward-to http://localhost:3000/api/webhooks/stripe \
+            > /tmp/stripe-listen.log 2>&1 &
+          # Wait for the CLI to log "Ready!" so we don't race the first
+          # webhook delivery.
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if grep -q "Ready!" /tmp/stripe-listen.log 2>/dev/null; then
+              echo "Stripe listener ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Stripe listener did not become ready within 10s — log:"
+          cat /tmp/stripe-listen.log || true
+          exit 1
 
       - name: Run e2e tests
         run: pnpm test:e2e

@@ -79,3 +79,18 @@ export function extractResetUrl(body: MailpitMessageBody): string {
 
   return match[0]
 }
+
+// The verify URL better-auth generates is
+//   <BETTER_AUTH_URL>/api/auth/verify-email?token=<token>&callbackURL=<spa>/dashboard?verified=1
+// Same single-line shape as the reset URL — pull it from the text body.
+export function extractVerifyUrl(body: MailpitMessageBody): string {
+  const match = body.Text.match(/https?:\/\/\S+\/api\/auth\/verify-email\?\S+/)
+
+  if (!match) {
+    throw new Error(
+      `Could not find a verify URL in the email body. First 300 chars:\n${body.Text.slice(0, 300)}`
+    )
+  }
+
+  return match[0]
+}

@@ -61,3 +61,54 @@ describe('better-auth sendResetPassword wiring', () => {
     expect(auth.options.emailAndPassword?.revokeSessionsOnPasswordReset).toBe(true)
   })
 })
+
+describe('better-auth sendVerificationEmail wiring', () => {
+  it('forwards the user email, firstname, and verify URL to the mailer', async () => {
+    const sendSpy = vi.spyOn(mailer, 'sendEmailVerification').mockResolvedValue(undefined)
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(true)
+
+    const { auth } = await import('@/lib/auth.js')
+    const sendVerificationEmail = auth.options.emailVerification?.sendVerificationEmail
+
+    expect(sendVerificationEmail).toBeDefined()
+
+    const fakeUser: FakeUser = { id: 'user-123', email: 'sam@example.com', firstname: 'Sam' }
+
+    await sendVerificationEmail?.({
+      user: fakeUser as unknown as Parameters<NonNullable<typeof sendVerificationEmail>>[0]['user'],
+      url: 'http://localhost:3000/api/auth/verify-email?token=abc&callbackURL=foo',
+      token: 'abc'
+    })
+
+    expect(sendSpy).toHaveBeenCalledWith({
+      to: 'sam@example.com',
+      firstname: 'Sam',
+      verifyUrl: 'http://localhost:3000/api/auth/verify-email?token=abc&callbackURL=foo'
+    })
+  })
+
+  it('skips sending and logs when MAIL_FROM is unset (mailer not configured)', async () => {
+    const sendSpy = vi.spyOn(mailer, 'sendEmailVerification').mockResolvedValue(undefined)
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(false)
+
+    const { auth } = await import('@/lib/auth.js')
+    const sendVerificationEmail = auth.options.emailVerification?.sendVerificationEmail
+
+    const fakeUser: FakeUser = { id: 'user-123', email: 'sam@example.com' }
+
+    await sendVerificationEmail?.({
+      user: fakeUser as unknown as Parameters<NonNullable<typeof sendVerificationEmail>>[0]['user'],
+      url: 'http://localhost:3000/api/auth/verify-email?token=abc',
+      token: 'abc'
+    })
+
+    expect(sendSpy).not.toHaveBeenCalled()
+  })
+
+  it('configures send-on-signup with a 24-hour TTL', async () => {
+    const { auth } = await import('@/lib/auth.js')
+
+    expect(auth.options.emailVerification?.sendOnSignUp).toBe(true)
+    expect(auth.options.emailVerification?.expiresIn).toBe(60 * 60 * 24)
+  })
+})

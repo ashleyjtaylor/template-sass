@@ -50,5 +50,6 @@ Draft a message in Conventional Commits format:
 - Don't squash unrelated changes; suggest splitting if the staged diff covers multiple concerns.
 - Don't reference task / PR numbers in the subject; use a footer (`Refs: ABC-123`) if needed.
 - Don't run `git commit` yourself unless the user explicitly confirms — propose the message and the exact `git commit` command for them to invoke.
+- Don't add AI co-authorship attributions (e.g. "Co-Authored-By: Claude")
 
 For the surrounding workflow (branching, hooks, PR discipline, destructive-op approval), see the `git-workflow` skill.

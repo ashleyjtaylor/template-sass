@@ -30,12 +30,23 @@ export async function createCheckoutSession(
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
+    // Pin the Checkout UI language. Template defaults to en-GB to match
+    // the SPA's £-denominated pricing card. Forks targeting other
+    // markets should change this in lockstep with the Stripe price's
+    // currency and plans.tsx.
+    locale: 'en-GB',
     // Card-only Checkout. Without this, Stripe surfaces every payment
     // method enabled at the account level (Klarna, Revolut Pay, Amazon
     // Pay, Link, etc.) behind an accordion. Card-only is the standard
     // SaaS default and keeps the e2e flow deterministic. Forks that
     // want multi-method checkout can remove this line.
     payment_method_types: ['card'],
+    // Explicit override of the Stripe Dashboard's "Phone number" toggle
+    // (Settings → Checkout & Payment Links). The API value takes
+    // precedence — without this, accounts with the dashboard toggle on
+    // get a mandatory phone field on the Checkout page, which derails
+    // the e2e suite and adds friction the template doesn't need.
+    phone_number_collection: { enabled: false },
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
