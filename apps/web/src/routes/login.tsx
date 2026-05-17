@@ -28,6 +28,10 @@ export const Route = createFileRoute('/login')({
 const friendlyError = (err: unknown): string => {
   if (err instanceof ApiError) {
     if (err.status === 401) return 'Email or password is incorrect.'
+    // Covers both the per-IP cap (20 / 10 min) and the per-email lockout
+    // (5 fails / 15 min). We don't distinguish which fired — the user
+    // remedy is the same: wait, then try again.
+    if (err.status === 429) return 'Too many sign-in attempts. Wait a few minutes and try again.'
     if (err.status >= 500) return 'Something went wrong on our end. Try again in a moment.'
   }
 

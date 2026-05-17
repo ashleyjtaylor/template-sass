@@ -152,7 +152,31 @@ Better-auth 1.6.x hardcodes a couple of things you can't config away. Document n
 - `packages/auth` extraction (lands at second consumer)
 - `BETTER_AUTH_URL` swap to `https://app.<domain>` (lands with Route53/ACM)
 - JWT plugin (lands when mobile or third-party API consumer arrives — see "Sessions vs JWT" above)
-- Rate limiting (better-auth has its own; defer until rate-limit work lands)
+
+## Rate limiting
+
+Better-auth's rate limiter is wired in `apps/api/src/lib/auth.ts` with `storage: 'database'` against the `RateLimit` Prisma model. Counters survive deploys and are shared across ECS tasks. Gate: `APP_ENV === 'staging' || APP_ENV === 'production'` — disabled locally and in tests because better-auth keys per-IP and the e2e suite would 429 against itself (all traffic from 127.0.0.1).
+
+Per-route limits (set via `rateLimit.customRules`):
+
+| Endpoint | Window | Max |
+|---|---|---|
+| `/sign-in/email` | 10 min | 20 / IP |
+| `/sign-up/email` | 1 hour | 5 / IP |
+| `/sign-in/social/*` | 10 min | 20 / IP |
+| `/change-password` | 1 hour | 10 / IP |
+| `/request-password-reset` | 1 hour | 10 / IP |
+| `/send-verification-email` | 1 hour | 10 / IP |
+
+**Per-email sign-in lockout** is a separate counter, enforced via `hooks.before` / `hooks.after` on `/sign-in/email`: 5 failed attempts within 15 minutes trips a 429. Successful sign-in clears the counter. Unknown-email attempts still increment — making a probe look identical to a real-account miss preserves enumeration resistance. Counter key: `signin:fail:<sha256(email).slice(0,16)>` in the same `RateLimit` table (no second table). The email is hashed so the table never stores raw addresses.
+
+**Envelope harmonisation**: better-auth's 429 body is `{ message }` only — no `code`. The wrapper around `auth.handler` in `apps/api/src/app.ts` injects `code: 'TOO_MANY_REQUESTS'` so the SPA's `ApiError` parser sees the standard `{ code, message }` envelope and surfaces the real message instead of "HTTP 429".
+
+**Observability**: per-email trips log a single structured line `{ event: 'rate_limit_exceeded', route, identifierHash, limit, windowSec }` via Pino. Filter `event=rate_limit_exceeded` in CloudWatch Logs Insights to see active lockouts. Better-auth's built-in per-IP trips are not logged (it returns a Response directly from inside the limiter); the wrapper sees them but doesn't log — add a counter there if attack visibility becomes important.
+
+**Upgrade path to Redis**: swap `storage: 'database'` → `storage: 'secondary-storage'` and wire an ioredis client as `secondaryStorage`. One-line change. Pull the trigger when sustained >100 req/s on auth endpoints starts showing up in DB metrics, or when a job queue / session cache also wants Redis.
+
+**Failure mode**: if Postgres briefly fails the rate-limit query, better-auth falls open (allows the request) and logs an internal error. Acceptable for an MVP — fail-closed would lock everyone out during a DB blip. Documented in [`docs/runbooks/rate-limiting.md`](../../../docs/runbooks/rate-limiting.md).
 
 ## Before adding an auth-touching change, answer
 

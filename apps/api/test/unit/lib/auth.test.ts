@@ -121,3 +121,31 @@ describe('better-auth account-linking config', () => {
     expect(auth.options.account?.accountLinking?.trustedProviders).toContain('google')
   })
 })
+
+describe('better-auth rate-limit config', () => {
+  it('uses database storage backed by the RateLimit Prisma model', async () => {
+    const { auth } = await import('@/lib/auth.js')
+
+    expect(auth.options.rateLimit?.storage).toBe('database')
+  })
+
+  it('disables the limiter in local + test, leaving the e2e + dev paths unimpeded', async () => {
+    // APP_ENV defaults to 'local' under vitest (env block in vitest.config.ts).
+    // Production / staging flip the gate; this test guards the local carve-out.
+    const { auth } = await import('@/lib/auth.js')
+
+    expect(auth.options.rateLimit?.enabled).toBe(false)
+  })
+
+  it('declares per-route custom rules covering every limited auth endpoint', async () => {
+    const { auth } = await import('@/lib/auth.js')
+    const rules = auth.options.rateLimit?.customRules ?? {}
+
+    expect(rules['/sign-in/email']).toEqual({ window: 600, max: 20 })
+    expect(rules['/sign-up/email']).toEqual({ window: 3600, max: 5 })
+    expect(rules['/sign-in/social/*']).toEqual({ window: 600, max: 20 })
+    expect(rules['/change-password']).toEqual({ window: 3600, max: 10 })
+    expect(rules['/request-password-reset']).toEqual({ window: 3600, max: 10 })
+    expect(rules['/send-verification-email']).toEqual({ window: 3600, max: 10 })
+  })
+})
