@@ -32,6 +32,20 @@ export function priceIdForPlan(plan: string): string {
   return priceId
 }
 
+// Reverse lookup: given a Stripe price id, return the plan key it
+// belongs to. Used by the webhook handler to resolve `planKey` after
+// a Customer-Portal-driven plan switch — `customer.subscription.updated`
+// carries the new `price.id` but doesn't expand `price.product`, so we
+// can't read product metadata without an extra API call. Returns null
+// for unconfigured / unknown price ids; the caller falls through to
+// other resolution paths.
+export function planKeyForPriceId(priceId: string): string | null {
+  for (const [plan, id] of Object.entries(PLAN_PRICE_IDS)) {
+    if (id.length > 0 && id === priceId) return plan
+  }
+  return null
+}
+
 // True iff a fork has configured the Stripe credentials. The webhook
 // handler + Checkout/Portal routes call this before touching Stripe so
 // the user gets a clear 503 instead of a cryptic Stripe error.
