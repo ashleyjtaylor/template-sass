@@ -33,15 +33,20 @@ export async function fillTestCardAndPay(page: Page): Promise<void> {
     await postal.first().fill('12345')
   }
 
-  // Phone is only rendered when the account's Checkout settings have
-  // "Phone number" enabled and the API didn't override with
-  // phone_number_collection: { enabled: false }. The template now sets
-  // that override (see packages/billing/src/checkout.ts), but the fill
-  // stays as a defensive fallback for forks that want phone collection.
-  const phone = page.getByRole('textbox', { name: /phone/i })
+  // Stripe Link's "Save my information for faster checkout" checkbox is
+  // ticked by default. Ticked → Link asks for a phone number to
+  // associate with the saved card → e2e hangs waiting for a field it
+  // can't realistically populate. Untick it so the flow stays
+  // card-only. The checkbox is technically optional and not always
+  // present (Stripe gates Link availability on geo/account); guard
+  // with a count check.
+  const saveInfo = page.getByLabel(/save (my )?(info|information)/i)
 
-  if (await phone.count()) {
-    await phone.first().fill('5555550123')
+  if (await saveInfo.count()) {
+    const box = saveInfo.first()
+    if (await box.isChecked()) {
+      await box.uncheck()
+    }
   }
 
   await page.getByRole('button', { name: /(pay|subscribe|start trial)/i }).click()
