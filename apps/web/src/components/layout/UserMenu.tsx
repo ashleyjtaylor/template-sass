@@ -8,9 +8,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 import { useSession, useSignOut } from '@/modules/session/api'
 
-export function UserMenu() {
+interface UserMenuProps {
+  // When true, render just the avatar (no email, no chevron). The
+  // dropdown still opens on click — only the trigger visual collapses.
+  collapsed?: boolean
+}
+
+export function UserMenu({ collapsed = false }: UserMenuProps = {}) {
   const { user } = useSession()
   const signOut = useSignOut()
   const navigate = useNavigate()
@@ -33,14 +40,25 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none">
+      <DropdownMenuTrigger
+        title={collapsed ? user.email : undefined}
+        aria-label={collapsed ? user.email : undefined}
+        className={cn(
+          'flex items-center rounded-md text-left text-sm transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none',
+          collapsed ? 'justify-center p-1' : 'w-full gap-2 px-2 py-1.5'
+        )}
+      >
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
           {initials}
         </span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-xs">{user.email}</span>
-        </span>
-        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+        {collapsed ? null : (
+          <>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-xs">{user.email}</span>
+            </span>
+            <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+          </>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-56">
         <DropdownMenuLabel>Signed in as</DropdownMenuLabel>
