@@ -122,6 +122,109 @@ describe('better-auth account-linking config', () => {
   })
 })
 
+describe('welcome-email wiring', () => {
+  // Generic shape the welcome hooks accept. Better-auth's own User type is
+  // narrower than what we need; structural casts via `unknown` are honest.
+  type FakeVerifiedUser = { id: string; email: string; firstname?: string; emailVerified: boolean }
+
+  it('afterEmailVerification dispatches the welcome with email, firstname, and dashboard URL', async () => {
+    const sendSpy = vi.spyOn(mailer, 'sendWelcome').mockResolvedValue(undefined)
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(true)
+
+    const { auth } = await import('@/lib/auth.js')
+    const afterEmailVerification = auth.options.emailVerification?.afterEmailVerification
+    expect(afterEmailVerification).toBeDefined()
+
+    const user: FakeVerifiedUser = {
+      id: 'user-1',
+      email: 'sam@example.com',
+      firstname: 'Sam',
+      emailVerified: true
+    }
+    await afterEmailVerification?.(
+      user as unknown as Parameters<NonNullable<typeof afterEmailVerification>>[0]
+    )
+
+    expect(sendSpy).toHaveBeenCalledWith({
+      to: 'sam@example.com',
+      firstname: 'Sam',
+      // env.WEB_BASE_URL defaults to http://localhost:5174 in tests.
+      dashboardUrl: 'http://localhost:5174/dashboard'
+    })
+  })
+
+  it('afterEmailVerification swallows mailer errors so verification still succeeds', async () => {
+    vi.spyOn(mailer, 'sendWelcome').mockRejectedValue(new Error('smtp down'))
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(true)
+
+    const { auth } = await import('@/lib/auth.js')
+    const afterEmailVerification = auth.options.emailVerification?.afterEmailVerification
+
+    const user: FakeVerifiedUser = { id: 'user-1', email: 'sam@example.com', emailVerified: true }
+
+    await expect(
+      afterEmailVerification?.(
+        user as unknown as Parameters<NonNullable<typeof afterEmailVerification>>[0]
+      )
+    ).resolves.toBeUndefined()
+  })
+
+  it('afterEmailVerification skips the send when mailer is not configured', async () => {
+    const sendSpy = vi.spyOn(mailer, 'sendWelcome').mockResolvedValue(undefined)
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(false)
+
+    const { auth } = await import('@/lib/auth.js')
+    const afterEmailVerification = auth.options.emailVerification?.afterEmailVerification
+
+    const user: FakeVerifiedUser = { id: 'user-1', email: 'sam@example.com', emailVerified: true }
+    await afterEmailVerification?.(
+      user as unknown as Parameters<NonNullable<typeof afterEmailVerification>>[0]
+    )
+
+    expect(sendSpy).not.toHaveBeenCalled()
+  })
+
+  it('user.create.after dispatches the welcome for pre-verified OAuth creates', async () => {
+    const sendSpy = vi.spyOn(mailer, 'sendWelcome').mockResolvedValue(undefined)
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(true)
+
+    const { auth } = await import('@/lib/auth.js')
+    const afterCreate = auth.options.databaseHooks?.user?.create?.after
+    expect(afterCreate).toBeDefined()
+
+    const user: FakeVerifiedUser = {
+      id: 'user-2',
+      email: 'oauth@example.com',
+      firstname: 'Pat',
+      emailVerified: true
+    }
+    await afterCreate?.(user as unknown as Parameters<NonNullable<typeof afterCreate>>[0])
+
+    expect(sendSpy).toHaveBeenCalledWith({
+      to: 'oauth@example.com',
+      firstname: 'Pat',
+      dashboardUrl: 'http://localhost:5174/dashboard'
+    })
+  })
+
+  it('user.create.after skips when emailVerified is false (email+password initial create)', async () => {
+    const sendSpy = vi.spyOn(mailer, 'sendWelcome').mockResolvedValue(undefined)
+    vi.spyOn(mailer, 'isMailerConfigured').mockReturnValue(true)
+
+    const { auth } = await import('@/lib/auth.js')
+    const afterCreate = auth.options.databaseHooks?.user?.create?.after
+
+    const user: FakeVerifiedUser = {
+      id: 'user-3',
+      email: 'newbie@example.com',
+      emailVerified: false
+    }
+    await afterCreate?.(user as unknown as Parameters<NonNullable<typeof afterCreate>>[0])
+
+    expect(sendSpy).not.toHaveBeenCalled()
+  })
+})
+
 describe('better-auth rate-limit config', () => {
   it('uses database storage backed by the RateLimit Prisma model', async () => {
     const { auth } = await import('@/lib/auth.js')

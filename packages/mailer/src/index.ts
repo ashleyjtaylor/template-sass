@@ -5,6 +5,7 @@ export { type SendPasswordResetInput, sendPasswordReset } from './password-reset
 export { renderAccountDeleted } from './templates/account-deleted.js'
 export { renderEmailVerification } from './templates/email-verification.js'
 export { type RenderedEmail, renderPasswordReset } from './templates/password-reset.js'
+export { renderWelcome } from './templates/welcome.js'
 export {
   getTransport,
   type MailTransport,
@@ -12,3 +13,4 @@ export {
   type SendInput,
   setTransport
 } from './transport.js'
+export { type SendWelcomeInput, sendWelcome } from './welcome.js'
