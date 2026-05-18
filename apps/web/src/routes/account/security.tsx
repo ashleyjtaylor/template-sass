@@ -13,7 +13,9 @@ function SecurityTab() {
   const { user } = useSession()
   const methods = useAccountMethods()
 
-  if (!user) return null
+  if (!user) {
+    return null
+  }
 
   // Default to true while methods are loading so the password section
   // doesn't flash off-then-on for the common email+password case.

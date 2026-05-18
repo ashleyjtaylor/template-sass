@@ -91,7 +91,9 @@ async function loadSubscriptionForPlanChange(userId: string, targetPlan: string)
     }
   })
 
-  if (!user) throw new NotFoundError('User not found')
+  if (!user) {
+    throw new NotFoundError('User not found')
+  }
 
   const sub = user.subscription
 

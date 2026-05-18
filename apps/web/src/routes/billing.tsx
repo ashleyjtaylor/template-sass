@@ -39,15 +39,22 @@ function BillingPage() {
   // Stop polling as soon as the mirror reflects the target plan, or
   // after the timeout cap if the webhook never lands.
   useEffect(() => {
-    if (!pollForPlan) return
+    if (!pollForPlan) {
+      return
+    }
 
     if (access.data?.subscription?.planKey === pollForPlan) {
       setPollForPlan(null)
       return
     }
 
-    const timeout = setTimeout(() => setPollForPlan(null), UPGRADE_POLL_TIMEOUT_MS)
-    return () => clearTimeout(timeout)
+    const timeout = setTimeout(() => {
+      setPollForPlan(null)
+    }, UPGRADE_POLL_TIMEOUT_MS)
+
+    return () => {
+      clearTimeout(timeout)
+    }
   }, [pollForPlan, access.data?.subscription?.planKey])
 
   const openPortal = () => {

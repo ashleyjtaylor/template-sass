@@ -8,7 +8,9 @@ export const Route = createFileRoute('/account/profile')({
 
 function ProfileTab() {
   const { user } = useSession()
-  if (!user) return null
+  if (!user) {
+    return null
+  }
 
   return (
     <ProfileSection initialFirstname={user.firstname ?? ''} initialLastname={user.lastname ?? ''} />

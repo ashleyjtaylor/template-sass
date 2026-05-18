@@ -4,15 +4,26 @@ import { UAParser } from 'ua-parser-js'
 // "Chrome on macOS". Returns "Unknown device" when the UA is missing
 // or unparseable so the UI always has something to render.
 export function describeUserAgent(userAgent: string | null | undefined): string {
-  if (!userAgent) return 'Unknown device'
+  if (!userAgent) {
+    return 'Unknown device'
+  }
 
   const parsed = new UAParser(userAgent).getResult()
+
   const browser = parsed.browser.name
   const os = parsed.os.name
 
-  if (browser && os) return `${browser} on ${os}`
-  if (browser) return browser
-  if (os) return os
+  if (browser && os) {
+    return `${browser} on ${os}`
+  }
+
+  if (browser) {
+    return browser
+  }
+
+  if (os) {
+    return os
+  }
 
   return 'Unknown device'
 }
@@ -23,17 +34,29 @@ export function describeUserAgent(userAgent: string | null | undefined): string 
 export function describeLastActive(date: Date, now: Date = new Date()): string {
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-  if (seconds < 60) return 'Active now'
+  if (seconds < 60) {
+    return 'Active now'
+  }
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+
+  if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+  }
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+
+  if (hours < 24) {
+    return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  }
 
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`
+
+  if (days < 30) {
+    return `${days} day${days === 1 ? '' : 's'} ago`
+  }
 
   const months = Math.floor(days / 30)
+
   return `${months} month${months === 1 ? '' : 's'} ago`
 }

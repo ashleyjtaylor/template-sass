@@ -39,8 +39,9 @@ export const createPortalSessionController = async (session: AuthSession) => {
   return buildPortalSession(session.userId)
 }
 
-export const getAccessStateController = async (session: AuthSession) =>
-  readAccessState(session.userId)
+export const getAccessStateController = async (session: AuthSession) => {
+  return readAccessState(session.userId)
+}
 
 export interface PreviewPlanChangeControllerInput {
   plan: string

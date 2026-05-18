@@ -8,9 +8,15 @@ import { ConfirmDeleteModal } from './ConfirmDeleteModal'
 
 const errorMessageFor = (err: unknown): string => {
   if (err instanceof ApiError) {
-    if (err.code === 'BadPassword') return 'That password is incorrect.'
-    if (err.status >= 500) return 'Something went wrong on our end. Try again in a moment.'
+    if (err.code === 'BadPassword') {
+      return 'That password is incorrect.'
+    }
+
+    if (err.status >= 500) {
+      return 'Something went wrong on our end. Try again in a moment.'
+    }
   }
+
   return 'Could not delete your account. Try again.'
 }
 

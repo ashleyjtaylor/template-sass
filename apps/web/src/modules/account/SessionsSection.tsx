@@ -34,8 +34,14 @@ export function SessionsSection() {
   const currentEntityId = currentSession?.session.entityId
   // Sort current session first so it always anchors the top of the list.
   const ordered = (sessions.data ?? []).slice().sort((a, b) => {
-    if (a.entityId === currentEntityId) return -1
-    if (b.entityId === currentEntityId) return 1
+    if (a.entityId === currentEntityId) {
+      return -1
+    }
+
+    if (b.entityId === currentEntityId) {
+      return 1
+    }
+
     return b.updatedAt.getTime() - a.updatedAt.getTime()
   })
 

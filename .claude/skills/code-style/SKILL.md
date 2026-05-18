@@ -74,6 +74,36 @@ Use `??` only when `0` / `''` / `false` are legitimate values — e.g. `count ??
 
 The wrong choice produces silent data corruption. Picking `??` for env vars lets `''` through as a "real" value, which then leaks into logs and responses.
 
+**Blocks**
+
+Always use braces.
+
+```typescript
+// BAD
+if (resolved === 'dark') root.classList.add('dark')
+else root.classList.remove('dark')
+
+// GOOD
+if (resolved === 'dark') {
+  root.classList.add('dark')
+} else {
+  root.classList.remove('dark')
+}
+
+// BAD
+const status = sub.status as SubscriptionStatus
+const state =
+  status === 'active' || status === 'trialing'
+    ? 'paid'
+    : status === 'past_due'
+      ? 'past_due'
+      : 'paywalled'
+
+// BAD
+export const getAccessStateController = async (session: AuthSession) =>
+  readAccessState(session.userId)
+```
+
 ### Constants over magic literals
 
 Extract a numeric or string literal as a named const when:
@@ -169,6 +199,29 @@ const handler = (data) => {
 
   return roles
 }
+
+// BAD
+useEffect(() => {
+  if (!search.error) return
+
+  toast.error('Could not sign in with Google', {
+    id: 'oauth-error',
+    description: 'Try again, or sign in with your email and password.'
+  })
+  navigate({
+    to: '/login',
+    search: { ...search, error: undefined },
+    replace: true
+  })
+}, [search, navigate])
+
+const callbackURL = (() => {
+  const url = new URL('/dashboard', window.location.origin)
+  url.searchParams.set('from', 'google')
+  const plan = new URLSearchParams(window.location.search).get('plan')
+  if (plan) url.searchParams.set('plan', plan)
+  return url.toString()
+})()
 ```
 
 In Hono handlers, bind the awaited value to a `const` before calling `c.json`. Don't inline the await — `c.json(await createUser(...))` is rejected style. The named bind documents what's being returned and keeps the value inspectable in a debugger.

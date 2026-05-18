@@ -3,6 +3,17 @@ name: git-workflow
 description: Branching, hooks, PR, and destructive-op rules for the trunk-based change cycle. Apply to every change. Use `/commit` for message format — not duplicated here.
 ---
 
+## ⛔ NON-NEGOTIABLE — READ EVERY TIME
+
+These two rules apply to every single change. Violations are not "speed vs caution" trade-offs; they are bugs.
+
+1. **STOP AFTER `git add`.** Never run `git commit`, `git push`, or `gh pr create` without an explicit user prompt in the **current turn** that says "commit" / "go" / "ship" / "push" / equivalent. After staging, report the staged set + branch name + summary, then wait. This applies on the first commit of a branch AND every follow-up commit on the same branch — past approval does not carry forward.
+2. **NO Co-Authored-By trailers. NO "Generated with Claude Code" footers.** Commit bodies are the Conventional Commits subject + optional plain-text body — that is it. Adding trailers contaminates `git log` and `gh pr view` output.
+
+If you are ever about to call `git commit` or `gh pr create` and cannot point to a user message **in this turn** that explicitly approved it, stop. The user wrote these rules down precisely so they don't have to repeat them — applying them is your job, not theirs.
+
+---
+
 This repo is trunk-based: `main` is always deployable; every change lands via a short-lived feature branch and a PR.
 
 **Always branch first**
