@@ -3,10 +3,10 @@ name: building-feature
 description: When building and on completion of a feature, ensure it follows and has completed this Definition of Done. The feature isn't complete until all of the below is ticked off.
 ---
 
-**Pre-feature**
+### Pre-feature
 - Ensure the `/pre-feature` skill has been fulfilled.
 
-**Build**
+### Build
 - Build the cleanest code possible. Stick to the feature only — note prerequisites and verify with the user before sprawling.
 - Implement both local and production paths in the same change (e.g. local file upload AND pre-signed S3 upload). Don't ship a feature that only works locally.
 - Update GitHub Actions workflows if the feature touches CI/CD or environment variables.
@@ -14,19 +14,23 @@ description: When building and on completion of a feature, ensure it follows and
 - If the feature ships or modifies a Dockerfile, run `docker build` and `docker run` against it locally. The standard `pnpm` checks don't exercise the image — Dockerfile bugs only surface in `docker build` output.
 - Prefer the proper config over a workaround flag or lint suppression. If you reach for `--legacy`, `--ignore-scripts`, `// eslint-disable`, `biome-ignore`, or any flag named "legacy" / "force" / "skip", first check whether the tool has a canonical opt-in for the underlying behaviour. Workarounds accumulate as silent debt; proper config is auditable and self-documenting.
 
-**Test**
-- Unit tests for service-layer logic. Integration tests through tRPC for every endpoint, covering the happy path and each error class. E2E for golden paths only.
-- Use factories in `packages/test-factories`. Per-test transaction rollback, no fixture cleanup. Stripe and SES stubbed in CI; real test mode in staging E2E.
+### Test
+- Unit tests for service-layer logic.
+- Integration tests through tRPC for every endpoint, covering the happy path and each error class.
+- E2E for golden paths only.
+- Use factories in `packages/test-factories`.
+- Per-test transaction rollback, no fixture cleanup. Stripe and SES stubbed in CI; real test mode in staging E2E.
 
-**Accessibility**
+### Accessibility
 - Aim for WCAG AA on customer-facing surfaces. Use shadcn primitives (already accessible) — don't reinvent. Test keyboard navigation and screen-reader labels for new flows.
 
-**Review (before committing — be your own code reviewer)**
+### Review (before committing — be your own code reviewer)
 
 Read the diff back end-to-end and audit for things that look fine in isolation but jar against the rest of the codebase. Don't trust "it works on my machine" — many issues only surface in CI, on a fork, or in production.
 
 Specifically check:
 
+- **Code-style checks**: if you have applied code-style formatting to all of your work.
 - **Overlooked logic**: edge cases, error paths, race conditions, empty/null/undefined inputs, what happens on retry.
 - **Cross-file consistency**: values that travel together (region, ports, version pins, env var names, role ARNs) — if you changed one, did you change the others? `grep` for the value across the repo.
 - **CI actually validates the change**: if you added a new package, does CI lint/typecheck/test it? If you added a new workflow, does it run against the right targets and have the required secrets/permissions? If you broke a config, would CI catch it before deploy?

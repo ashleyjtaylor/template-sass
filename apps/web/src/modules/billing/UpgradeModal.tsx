@@ -15,22 +15,38 @@ import { useChangePlan, usePreviewPlanChange } from './api'
 
 const errorMessageFor = (err: unknown): string => {
   if (err instanceof ApiError) {
-    if (err.code === 'NoActiveSubscription') return 'Subscribe first to upgrade.'
-    if (err.code === 'InvalidPlanChange') return "You're already on this plan."
-    if (err.code === 'UnsupportedPlan') return 'That plan is not available.'
-    if (err.status === 429) return 'Too many requests. Wait a few minutes and try again.'
-    if (err.status >= 500) return 'Something went wrong on our end. Try again in a moment.'
+    if (err.code === 'NoActiveSubscription') {
+      return 'Subscribe first to upgrade.'
+    }
+
+    if (err.code === 'InvalidPlanChange') {
+      return "You're already on this plan."
+    }
+
+    if (err.code === 'UnsupportedPlan') {
+      return 'That plan is not available.'
+    }
+
+    if (err.status === 429) {
+      return 'Too many requests. Wait a few minutes and try again.'
+    }
+
+    if (err.status >= 500) {
+      return 'Something went wrong on our end. Try again in a moment.'
+    }
   }
+
   return "Couldn't upgrade. Try again."
 }
 
 // ISO 4217 codes come back from Stripe lowercase. Intl.NumberFormat
 // wants uppercase. Tiny helper to avoid sprinkling toUpperCase calls.
-const formatMoney = (amountCents: number, currency: string): string =>
-  new Intl.NumberFormat(undefined, {
+const formatMoney = (amountCents: number, currency: string): string => {
+  return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: currency.toUpperCase()
   }).format(amountCents / 100)
+}
 
 interface UpgradeModalProps {
   open: boolean
@@ -75,7 +91,9 @@ export function UpgradeModal({
   }, [open, targetPlan, previewMutate, previewReset, changeReset])
 
   const handleConfirm = () => {
-    if (!preview.data) return
+    if (!preview.data) {
+      return
+    }
 
     change.mutate(
       {

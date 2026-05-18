@@ -14,7 +14,9 @@ export const Route = createFileRoute('/account')({
 function AccountLayout() {
   const { user } = useSession()
 
-  if (!user) return null
+  if (!user) {
+    return null
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">

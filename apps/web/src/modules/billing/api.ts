@@ -9,10 +9,12 @@ import {
 
 const ACCESS_STATE_KEY = ['access-state'] as const
 
-export const useAccessState = (opts: { enabled?: boolean; pollMs?: number } = {}) =>
-  useQuery({
+export const useAccessState = (opts: { enabled?: boolean; pollMs?: number } = {}) => {
+  return useQuery({
     queryKey: ACCESS_STATE_KEY,
-    queryFn: () => api('/api/billing/access-state', accessStateSchema),
+    queryFn: () => {
+      return api('/api/billing/access-state', accessStateSchema)
+    },
     enabled: opts.enabled ?? true,
     // Refetch on focus / mount so the webhook-driven state flip lands
     // without a manual reload.
@@ -22,33 +24,40 @@ export const useAccessState = (opts: { enabled?: boolean; pollMs?: number } = {}
     // `paywalled` to `paid` after Checkout completes.
     refetchInterval: opts.pollMs ?? false
   })
+}
 
-export const useCreateCheckoutSession = () =>
-  useMutation({
-    mutationFn: (input: { plan: string }) =>
-      api('/api/billing/checkout-session', sessionUrlSchema, {
+export const useCreateCheckoutSession = () => {
+  return useMutation({
+    mutationFn: (input: { plan: string }) => {
+      return api('/api/billing/checkout-session', sessionUrlSchema, {
         method: 'POST',
         body: input
       })
+    }
   })
+}
 
-export const useCreatePortalSession = () =>
-  useMutation({
-    mutationFn: () =>
-      api('/api/billing/portal-session', sessionUrlSchema, {
+export const useCreatePortalSession = () => {
+  return useMutation({
+    mutationFn: () => {
+      return api('/api/billing/portal-session', sessionUrlSchema, {
         method: 'POST',
         body: {}
       })
+    }
   })
+}
 
-export const usePreviewPlanChange = () =>
-  useMutation({
-    mutationFn: (input: { plan: string }) =>
-      api('/api/billing/change-plan/preview', previewPlanChangeSchema, {
+export const usePreviewPlanChange = () => {
+  return useMutation({
+    mutationFn: (input: { plan: string }) => {
+      return api('/api/billing/change-plan/preview', previewPlanChangeSchema, {
         method: 'POST',
         body: input
       })
+    }
   })
+}
 
 export interface ChangePlanInput {
   plan: string
@@ -61,15 +70,18 @@ export const useChangePlan = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: ChangePlanInput) =>
-      api('/api/billing/change-plan', changePlanResultSchema, {
+    mutationFn: (input: ChangePlanInput) => {
+      return api('/api/billing/change-plan', changePlanResultSchema, {
         method: 'POST',
         body: input
-      }),
+      })
+    },
     // The webhook updates the mirror within ~1s of Stripe firing the
     // event, but invalidating the access-state cache here makes the
     // SubscriptionCard re-render the new planKey on the very next
     // refetch — no manual reload.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ACCESS_STATE_KEY })
+    onSuccess: () => {
+      return queryClient.invalidateQueries({ queryKey: ACCESS_STATE_KEY })
+    }
   })
 }

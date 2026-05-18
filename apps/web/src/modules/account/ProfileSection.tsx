@@ -9,9 +9,15 @@ import { useUpdateProfile } from '@/modules/session/api'
 
 const errorMessageFor = (err: unknown): string => {
   if (err instanceof ApiError) {
-    if (err.status === 429) return 'Too many requests. Wait a few minutes and try again.'
-    if (err.status >= 500) return 'Something went wrong on our end. Try again in a moment.'
+    if (err.status === 429) {
+      return 'Too many requests. Wait a few minutes and try again.'
+    }
+
+    if (err.status >= 500) {
+      return 'Something went wrong on our end. Try again in a moment.'
+    }
   }
+
   return 'Could not update your profile. Try again.'
 }
 

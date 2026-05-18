@@ -16,10 +16,21 @@ export function validateName(firstname: string, lastname: string): NameValidatio
   const f = firstname.trim()
   const l = lastname.trim()
 
-  if (f.length === 0) return 'FIRSTNAME_REQUIRED'
-  if (f.length > NAME_MAX_LENGTH) return 'FIRSTNAME_TOO_LONG'
-  if (l.length === 0) return 'LASTNAME_REQUIRED'
-  if (l.length > NAME_MAX_LENGTH) return 'LASTNAME_TOO_LONG'
+  if (f.length === 0) {
+    return 'FIRSTNAME_REQUIRED'
+  }
+
+  if (f.length > NAME_MAX_LENGTH) {
+    return 'FIRSTNAME_TOO_LONG'
+  }
+
+  if (l.length === 0) {
+    return 'LASTNAME_REQUIRED'
+  }
+
+  if (l.length > NAME_MAX_LENGTH) {
+    return 'LASTNAME_TOO_LONG'
+  }
 
   return null
 }
@@ -34,9 +45,17 @@ export function validatePassword(
   newPassword: string,
   confirm: string
 ): PasswordValidationError | null {
-  if (newPassword.length < PASSWORD_MIN_LENGTH) return 'NEW_PASSWORD_TOO_SHORT'
-  if (newPassword !== confirm) return 'CONFIRM_MISMATCH'
-  if (currentPassword === newPassword) return 'SAME_AS_CURRENT'
+  if (newPassword.length < PASSWORD_MIN_LENGTH) {
+    return 'NEW_PASSWORD_TOO_SHORT'
+  }
+
+  if (newPassword !== confirm) {
+    return 'CONFIRM_MISMATCH'
+  }
+
+  if (currentPassword === newPassword) {
+    return 'SAME_AS_CURRENT'
+  }
 
   return null
 }

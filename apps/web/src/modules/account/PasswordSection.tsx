@@ -16,10 +16,19 @@ const errorMessageFor = (err: unknown): string => {
     // better-auth's change-password throws BAD_REQUEST + INVALID_PASSWORD
     // when the supplied current password doesn't match. Surface a friendly
     // inline message rather than the raw "Invalid password" string.
-    if (err.code === 'INVALID_PASSWORD') return 'That password is incorrect.'
-    if (err.status === 429) return 'Too many attempts. Wait a few minutes and try again.'
-    if (err.status >= 500) return 'Something went wrong on our end. Try again in a moment.'
+    if (err.code === 'INVALID_PASSWORD') {
+      return 'That password is incorrect.'
+    }
+
+    if (err.status === 429) {
+      return 'Too many attempts. Wait a few minutes and try again.'
+    }
+
+    if (err.status >= 500) {
+      return 'Something went wrong on our end. Try again in a moment.'
+    }
   }
+
   return 'Could not update your password. Try again.'
 }
 

@@ -53,7 +53,11 @@ export function ConfirmDeleteModal({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!canSubmit) return
+
+    if (!canSubmit) {
+      return
+    }
+
     onConfirm(hasPassword ? { password } : {})
   }
 

@@ -9,6 +9,8 @@ Apply to all SPA work. The `css` skill covers styling and layout; this skill cov
 
 SPAs mirror the API's vertical-slice layout. Each feature owns its schemas, types, sub-components, and hooks under `src/modules/<feature>/`. Cross-feature infra (the API client, query client, error class, shadcn primitives) sits at the SPA root.
 
+Always use Pascal-case for component file names.
+
 ```
 apps/<spa>/src/
   modules/
