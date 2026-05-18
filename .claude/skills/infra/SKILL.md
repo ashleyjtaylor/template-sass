@@ -10,7 +10,7 @@ Read the existing infrastructure code first, then work through the following.
 Split by lifecycle, not by resource type:
 
 - `${product}-${env}-network` — VPC, subnets, NAT gateway(s), security groups. Rarely changes.
-- `${product}-${env}-data` — RDS, ElastiCache Redis, ECR, Secrets Manager, S3 (uploads), **ECS cluster**, **one-off task definitions** (migrator, bootstrap-staff, future seed/backfill tasks). Long-lived; deploys infrequently.
+- `${product}-${env}-data` — RDS, ECR, Secrets Manager, **ECS cluster**, **one-off task definitions** (today: migrator; future: bootstrap, seed, backfill). Long-lived; deploys infrequently. Redis / S3 (uploads) land here when first needed.
 - `${product}-${env}-app` — ECS services (api + worker), ALB, per-SPA S3 buckets + CloudFront distributions, Route53, ACM. Deploys frequently.
 
 ECR lives in `data` because the image must exist before `app`'s ECS service can start. The **ECS cluster also lives in `data`** so the migration one-off task can run before `app` deploys; services in `app` import the cluster via cross-stack ref. Secrets live in `data` for the same reason — they must be populated before `app` deploys.
@@ -34,17 +34,17 @@ Anything that runs **once per environment spin-up** rather than once per deploy 
 
 The pattern looks like the `migrator`:
 
-- A Fargate task definition in the `data` stack, sharing the API image, with a per-task CMD overriding the container entrypoint (e.g. `['node', 'dist/scripts/bootstrap-staff.js']`).
+- A Fargate task definition in the `data` stack, sharing the API image, with a per-task CMD overriding the container entrypoint (e.g. `['node', 'dist/scripts/<script>.js']`).
 - Per-task CloudWatch log group (`/ecs/${product}-${env}-<purpose>`) so failures are easy to find.
 - DB secrets + any app secrets the task actually needs, injected the same way the API service receives them.
 - An empty `environment:` block for any creds that should appear at trigger time only — those arrive as **runtime env overrides** in the workflow's `aws ecs run-task --overrides` payload, never as values stored on the task def or in Secrets Manager.
 - The workflow uses `add-mask` for sensitive inputs and tails the task's log group on a non-zero exit.
 
-The current example is `bootstrap-staff` (see `infra/cdk/lib/data-stack.ts` and `.github/workflows/bootstrap-staff.yml`). New one-shot tasks should mirror that file layout.
+The migrator (`infra/cdk/lib/data-stack.ts`, run before each API rolling deploy) is today's reference example. New one-shot tasks (bootstrap-staff, seed, backfill) should mirror that layout.
 
 **SPA hosting (CloudFront + S3 with OAC)**
 
-SPAs (`apps/internal` is the first; `apps/web`, `apps/portal` follow the same pattern) are served from a private S3 bucket fronted by CloudFront using **Origin Access Control** (the modern replacement for OAI). The bucket has `BLOCK_ALL` public access, server-side encryption, and a bucket policy that only allows the CloudFront distribution's source ARN.
+SPAs (today: `apps/web`; future SPAs follow the same pattern) are served from a private S3 bucket fronted by CloudFront using **Origin Access Control** (the modern replacement for OAI). The bucket has `BLOCK_ALL` public access, server-side encryption, and a bucket policy that only allows the CloudFront distribution's source ARN.
 
 The CloudFront distribution carries two origins:
 

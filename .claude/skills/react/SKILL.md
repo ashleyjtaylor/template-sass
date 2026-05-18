@@ -1,6 +1,6 @@
 ---
 name: react
-description: Apply React + SPA conventions — module structure, file-based routing, data fetching, error UX, component patterns. Use when building or reviewing any frontend code in `apps/internal`, `apps/web`, or future SPAs.
+description: Apply React + SPA conventions — module structure, file-based routing, data fetching, error UX, component patterns. Use when building or reviewing any frontend code in `apps/web` or future SPAs.
 ---
 
 Apply to all SPA work. The `css` skill covers styling and layout; this skill covers components, data, and structure. Conventions in `code-style` (types, comments, error handling, whitespace) apply here too.
@@ -32,7 +32,7 @@ apps/<spa>/src/
 
 **Cross-module imports go through `modules/<feature>`**, not into `<feature>/components/` directly. The module's public surface is what the folder root re-exports.
 
-**Shared modules across SPAs.** When a domain-agnostic module (`session`, `theme`) is needed in a second SPA, **duplicate first** and extract to `packages/<name>/` once both copies actually exist — same package-extraction-at-second-consumer rule as `packages/*` everywhere else. Drawing the package boundary against a single consumer is guesswork; against two it's informed. `apps/web` and `apps/internal` currently each carry their own `modules/session/` and `modules/theme/` for exactly this reason.
+**Shared modules across SPAs.** When a domain-agnostic module (`session`, `theme`) is needed in a second SPA, **duplicate first** and extract to `packages/<name>/` once both copies actually exist — same package-extraction-at-second-consumer rule as `packages/*` everywhere else. Drawing the package boundary against a single consumer is guesswork; against two it's informed.
 
 ## File-based routing (TanStack Router)
 

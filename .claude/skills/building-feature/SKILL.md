@@ -15,11 +15,9 @@ description: When building and on completion of a feature, ensure it follows and
 - Prefer the proper config over a workaround flag or lint suppression. If you reach for `--legacy`, `--ignore-scripts`, `// eslint-disable`, `biome-ignore`, or any flag named "legacy" / "force" / "skip", first check whether the tool has a canonical opt-in for the underlying behaviour. Workarounds accumulate as silent debt; proper config is auditable and self-documenting.
 
 ### Test
-- Unit tests for service-layer logic.
-- Integration tests through tRPC for every endpoint, covering the happy path and each error class.
-- E2E for golden paths only.
-- Use factories in `packages/test-factories`.
-- Per-test transaction rollback, no fixture cleanup. Stripe and SES stubbed in CI; real test mode in staging E2E.
+- Unit tests live alongside source (`apps/api/test/unit/`, `apps/web/test/unit/`, `packages/*/test/unit/`). Mock Prisma + external SDKs at the boundary — the current pattern is unit-only (integration tier was removed during the strip-down).
+- E2E (Playwright at `e2e/`) covers golden paths only. Stripe stubbed in CI; real test mode in the manual smoke against staging.
+- Before changing user-facing copy or route paths, grep `e2e/` for breakages — the suite is gated off auto-trigger, so drift isn't caught by per-PR CI.
 
 ### Accessibility
 - Aim for WCAG AA on customer-facing surfaces. Use shadcn primitives (already accessible) — don't reinvent. Test keyboard navigation and screen-reader labels for new flows.
