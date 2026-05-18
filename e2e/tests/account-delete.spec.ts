@@ -19,12 +19,9 @@ test('deletes the account from /account and bounces to /login', async ({ browser
   const page = await context.newPage()
 
   // Delete account lives on the Security tab now (bare /account
-  // redirects to /account/profile). The Security sections are
-  // accordions — expand "Delete account" then click the destructive
-  // CTA inside it.
+  // redirects to /account/profile).
   await page.goto('/account/security')
   await expect(page.getByRole('heading', { name: /^settings$/i })).toBeVisible()
-  await page.getByRole('button', { name: /^delete account$/i }).click()
   await page.getByRole('button', { name: /permanently delete account/i }).click()
 
   // Modal: must type the email exactly + supply the current password
@@ -61,7 +58,6 @@ test('blocks the submit until the typed email matches the signed-in email', asyn
   const page = await context.newPage()
 
   await page.goto('/account/security')
-  await page.getByRole('button', { name: /^delete account$/i }).click()
   await page.getByRole('button', { name: /permanently delete account/i }).click()
 
   const dialog = page.getByRole('dialog')
