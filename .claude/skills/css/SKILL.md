@@ -1,6 +1,6 @@
 ---
 name: css
-description: Apply CSS / styling conventions for SPAs — Tailwind 4 setup, shadcn primitives, design tokens, typography, layout, recurring visual patterns. Use when writing or reviewing any styling work in `apps/internal`, `apps/web`, or future SPAs.
+description: Apply CSS / styling conventions for SPAs — Tailwind 4 setup, shadcn primitives, design tokens, typography, layout, recurring visual patterns. Use when writing or reviewing any styling work in `apps/web` or future SPAs.
 ---
 
 Apply to all styling work in any SPA. The `react` skill covers components and data; this skill covers how things look and lay out.
@@ -67,7 +67,7 @@ Concrete rules:
 
 If you can write the layout as flex without losing the visual, do so. Reaching for grid by default produces brittle column-width definitions that need re-tuning every time the data shape changes.
 
-## Recurring visual patterns (from `apps/internal`)
+## Recurring visual patterns
 
 When building a new SPA page, consider these patterns first instead of inventing equivalents:
 

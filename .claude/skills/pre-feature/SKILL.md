@@ -18,7 +18,7 @@ Before writing a single line of code, interview me about this feature. Work thro
 **API design**
 - What routes are needed (method, path, auth requirement)?
 - What does the request body look like? What does the response look like?
-- What shared types need to be added to the types package?
+- What Zod schemas are needed (request bodies, response shapes), and where do they live?
 
 **Error handling**
 - What validation errors can the caller make (400)?
@@ -32,10 +32,9 @@ Before writing a single line of code, interview me about this feature. Work thro
 - Does this feature touch existing modules that might regress?
 
 **Testing plan**
-- What are the unit test cases for the service layer?
-- What are the integration test cases for each HTTP endpoint (happy path + each error class)?
-- What E2E test scenarios needs to be outlined?
-- What external I/O should be mocked vs real?
+- What are the unit test cases for the service layer? Routes? Pure helpers?
+- What E2E scenarios (Playwright) cover the golden path, if any?
+- What external I/O should be mocked vs hit for real?
 
 **System Design and Infrastructure**
 - What infrastructure resource needs to be created for this feature? (if any)
