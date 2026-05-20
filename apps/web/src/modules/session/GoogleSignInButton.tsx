@@ -40,7 +40,7 @@ export function GoogleSignInButton({
           // Solid blue-500 (no alpha) so the ring matches the pill colour
           // exactly — alpha rings read as a different shade against
           // light/dark backgrounds.
-          lastUsed && 'border-blue-500 ring-4 ring-blue-500'
+          lastUsed && 'border-blue-500 ring-2 ring-blue-500'
         )}
         onClick={handleClick}
         disabled={mutation.isPending}
