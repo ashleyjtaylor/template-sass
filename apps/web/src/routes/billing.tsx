@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ArrowUpRight, ExternalLink, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccessState, useCreatePortalSession } from '@/modules/billing/api'
@@ -69,7 +70,7 @@ function BillingPage() {
   const upgradeTarget = planKey ? UPGRADE_TARGETS[planKey] : undefined
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
+    <PageContainer>
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Billing</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Subscription & payments</h1>
@@ -103,7 +104,7 @@ function BillingPage() {
           onUpgraded={setPollForPlan}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }
 

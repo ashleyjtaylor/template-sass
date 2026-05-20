@@ -23,6 +23,14 @@ export const PLANS: Plan[] = [
     blurb: 'Everything you need to get started.',
     features: ['Full access to the product', 'Email support', 'Cancel anytime'],
     featured: true
+  },
+  {
+    key: 'max',
+    name: 'Max',
+    price: '£40',
+    cadence: '/month',
+    blurb: 'For teams that need more headroom.',
+    features: ['Everything in Pro', 'Higher usage limits', 'Priority support', 'Cancel anytime']
   }
 ]
 

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/modules/session/api'
 
@@ -19,7 +20,7 @@ function AccountLayout() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
+    <PageContainer>
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Account</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Settings</h1>
@@ -41,7 +42,7 @@ function AccountLayout() {
       <div className="mt-8">
         <Outlet />
       </div>
-    </div>
+    </PageContainer>
   )
 }
 
