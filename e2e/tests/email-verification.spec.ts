@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test'
 import { applyStorageState, makeUser, signUpProgrammatic } from '../fixtures/auth.js'
-import { disconnect, prisma, truncateAll } from '../fixtures/db.js'
+import { disconnect, prisma } from '../fixtures/db.js'
 import { extractVerifyUrl, flushMessages, waitForMessage } from '../fixtures/mailpit.js'
 
+// See note in auth.spec.ts: cleanup is suite-end + e2e- prefix scoped.
+// Mailpit still needs flushing per test so cross-test message lookups
+// don't pick up the previous test's verify email.
 test.beforeEach(async () => {
-  await truncateAll()
   await flushMessages()
 })
 

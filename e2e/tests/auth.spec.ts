@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test'
 import { applyStorageState, makeUser, signUpProgrammatic } from '../fixtures/auth.js'
-import { disconnect, truncateAll } from '../fixtures/db.js'
+import { disconnect } from '../fixtures/db.js'
 
-test.beforeEach(async () => {
-  await truncateAll()
-})
+// DB cleanup happens once at suite end in global-teardown.ts — it deletes
+// only rows whose email matches the e2e- prefix, leaving any rows the
+// developer created by hand untouched. Individual specs no longer need a
+// beforeEach reset because makeUser() mints a fresh random email per test.
 
 test.afterAll(async () => {
   await disconnect()

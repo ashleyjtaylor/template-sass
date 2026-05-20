@@ -34,8 +34,11 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  // After the whole suite finishes, delete any Stripe test-mode customers
-  // the signup-paywall test created. See global-teardown.ts.
+  // Sweep any e2e- rows an interrupted prior run left behind, so every
+  // run starts from a clean slate. See global-setup.ts.
+  globalSetup: './global-setup.ts',
+  // After the whole suite finishes, delete the e2e- rows + Stripe test
+  // customers this run created. See global-teardown.ts.
   globalTeardown: './global-teardown.ts',
 
   use: {
