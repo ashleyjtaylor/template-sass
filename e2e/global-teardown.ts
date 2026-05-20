@@ -1,18 +1,25 @@
 import Stripe from 'stripe'
+import { deleteE2eUsers, disconnect } from './fixtures/db.js'
 
 // Matches the email pattern produced by fixtures/auth.ts#makeUser:
 //   `e2e-${crypto.randomUUID().slice(0, 8)}@example.com`
 // Tight regex so we never delete a customer the user created by hand.
 const E2E_EMAIL_PATTERN = /^e2e-[a-f0-9]{8}@example\.com$/
 
-// Removes any Stripe test-mode customers (and their cascaded subscriptions)
-// that the e2e suite created. Runs once after the whole suite finishes —
-// failures here log but don't fail the suite, since by definition all
-// tests have already passed/failed by this point.
-//
-// Skipped if STRIPE_API_KEY is unset (e.g. local dev without billing
-// configured) — the suite simply leaves no Stripe state to clean.
+// Runs once after the whole suite finishes. Two cleanup passes:
+//   1. Stripe test-mode customers (with their cascaded subscriptions)
+//      created during signup-paywall.
+//   2. User rows + better-auth verification rows in the local DB,
+//      scoped by the same e2e- email prefix so we never touch a real
+//      account on the developer's dev DB.
+// Failures in either pass log but don't fail the suite — by this point
+// all tests have already passed or failed.
 export default async function globalTeardown(): Promise<void> {
+  await cleanupStripeCustomers()
+  await cleanupDbUsers()
+}
+
+async function cleanupStripeCustomers(): Promise<void> {
   const apiKey = process.env['STRIPE_API_KEY']
 
   if (!apiKey || apiKey.length === 0) {
@@ -54,5 +61,18 @@ export default async function globalTeardown(): Promise<void> {
     )
   } catch (err) {
     console.error('[e2e teardown] stripe cleanup failed (non-fatal):', err)
+  }
+}
+
+async function cleanupDbUsers(): Promise<void> {
+  try {
+    const { users, verifications } = await deleteE2eUsers()
+    console.log(
+      `[e2e teardown] deleted ${users} user row(s) and ${verifications} verification row(s)`
+    )
+  } catch (err) {
+    console.error('[e2e teardown] db cleanup failed (non-fatal):', err)
+  } finally {
+    await disconnect()
   }
 }

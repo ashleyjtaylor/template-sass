@@ -30,7 +30,7 @@ function PricingPage() {
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-xl gap-6 sm:grid-cols-1">
+        <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
           {PLANS.map((plan) => (
             <PlanCard key={plan.key} plan={plan} />
           ))}

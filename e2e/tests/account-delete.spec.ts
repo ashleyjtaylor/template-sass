@@ -1,10 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { applyStorageState, makeUser, signUpProgrammatic } from '../fixtures/auth.js'
-import { disconnect, prisma, truncateAll } from '../fixtures/db.js'
+import { disconnect, prisma } from '../fixtures/db.js'
 
-test.beforeEach(async () => {
-  await truncateAll()
-})
+// See note in auth.spec.ts: cleanup is suite-end + e2e- prefix scoped.
 
 test.afterAll(async () => {
   await disconnect()
@@ -29,7 +27,7 @@ test('deletes the account from /account and bounces to /login', async ({ browser
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('heading', { name: /delete your account/i })).toBeVisible()
   await dialog.getByLabel(/type your email to confirm/i).fill(user.email)
-  await dialog.getByLabel(/current password/i).fill(user.password)
+  await dialog.locator('#confirm-password').fill(user.password)
 
   await dialog.getByRole('button', { name: /^delete account$/i }).click()
 
@@ -67,7 +65,7 @@ test('blocks the submit until the typed email matches the signed-in email', asyn
   await expect(submit).toBeDisabled()
 
   await dialog.getByLabel(/type your email to confirm/i).fill('wrong@example.com')
-  await dialog.getByLabel(/current password/i).fill(user.password)
+  await dialog.locator('#confirm-password').fill(user.password)
   await expect(submit).toBeDisabled()
 
   // Type the right email → unlocked.

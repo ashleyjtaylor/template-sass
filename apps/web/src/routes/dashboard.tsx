@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { setLastAuthMethod } from '@/lib/last-auth-method'
 import { useAccessState, useCreateCheckoutSession } from '@/modules/billing/api'
@@ -100,17 +101,17 @@ function DashboardPage() {
 
   if (access.isLoading || isBouncingToCheckout) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-12">
+      <PageContainer>
         <Skeleton className="h-8 w-48" />
         <Skeleton className="mt-4 h-32 w-full" />
-      </div>
+      </PageContainer>
     )
   }
 
   const isPaid = access.data?.state === 'paid' || access.data?.state === 'past_due'
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <PageContainer>
       <VerifyEmailBanner />
       <header className="mb-8">
         <div className="text-[10px] font-medium uppercase text-muted-foreground/70">Dashboard</div>
@@ -118,7 +119,7 @@ function DashboardPage() {
       </header>
 
       {isPaid ? <PaidState /> : <PaywallState />}
-    </div>
+    </PageContainer>
   )
 }
 
@@ -144,7 +145,7 @@ function PaywallState() {
         </p>
       </section>
 
-      <div className="grid gap-6 sm:grid-cols-1">
+      <div className="grid gap-6 sm:grid-cols-2">
         {PLANS.map((plan) => (
           <PlanCard key={plan.key} plan={plan} />
         ))}

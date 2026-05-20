@@ -186,7 +186,7 @@ function SignUpPage() {
               // Blue ring when the user signed up with email last time,
               // matching the LastUsedPill. Solid (no alpha) so the
               // shade matches the pill exactly.
-              lastUsed === 'email' && 'ring-4 ring-blue-500 ring-offset-2'
+              lastUsed === 'email' && 'ring-2 ring-blue-500 ring-offset-2'
             )}
             disabled={busy}
           >

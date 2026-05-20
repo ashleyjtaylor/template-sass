@@ -1,11 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { makeUser } from '../fixtures/auth.js'
-import { disconnect, prisma, truncateAll } from '../fixtures/db.js'
+import { disconnect, prisma } from '../fixtures/db.js'
 import { fillTestCardAndPay } from '../fixtures/stripe.js'
 
-test.beforeEach(async () => {
-  await truncateAll()
-})
+// See note in auth.spec.ts: cleanup is suite-end + e2e- prefix scoped.
 
 test.afterAll(async () => {
   await disconnect()
@@ -22,7 +20,13 @@ test('signs up, pays via Stripe checkout, and lands on /dashboard', async ({ pag
 
   await page.goto('/')
 
-  await page.getByRole('button', { name: /get started/i }).click()
+  // Two PlanCard buttons on the homepage now (Pro + Max). Scope to the
+  // Pro card via the heading so the click is unambiguous; this spec
+  // covers the Pro signup path specifically.
+  const proCard = page
+    .getByRole('article')
+    .filter({ has: page.getByRole('heading', { name: 'Pro' }) })
+  await proCard.getByRole('button', { name: /get started/i }).click()
   await expect(page).toHaveURL(/\/signup\?plan=pro/)
 
   await page.getByLabel('First name').fill(user.firstname)
