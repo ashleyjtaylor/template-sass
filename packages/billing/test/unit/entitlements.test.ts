@@ -5,7 +5,12 @@ describe('entitlementsForPlan', () => {
   it('returns the Pro plan with the expected shape', () => {
     const result = entitlementsForPlan('pro')
 
-    expect(result.seats).toBe(25)
+    expect(result.features).toBeInstanceOf(Set)
+  })
+
+  it('returns the Max plan with the expected shape', () => {
+    const result = entitlementsForPlan('max')
+
     expect(result.features).toBeInstanceOf(Set)
   })
 

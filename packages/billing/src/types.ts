@@ -31,8 +31,5 @@ export interface AccessStateResult {
 // Per-plan capabilities. Kept inline for the MVP; graduates to its own
 // package when a second plan + meaningful entitlement variance ships.
 export interface Entitlements {
-  // Soft cap. Enforced lazily in seat-sync logic; the spine PR does not
-  // enforce yet (deferred to the per-seat sync ticket).
-  seats: number
   features: ReadonlySet<string>
 }
