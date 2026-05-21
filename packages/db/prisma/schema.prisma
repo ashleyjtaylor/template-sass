@@ -134,7 +134,13 @@ model StripeEvent {
 // pattern via gen_random_uuid() (Postgres 13+, built-in).
 model RateLimit {
   id          String   @id @default(cuid())
-  entityId    String   @unique @default(dbgenerated("'rl_' || gen_random_uuid()"))
+  // Pinned to Postgres's *normalized* default expression (with the
+  // `::text` cast and parentheses PG adds on storage). Prisma compares
+  // this string byte-for-byte against the live DB during `migrate dev`;
+  // the un-normalized form (`'rl_' || gen_random_uuid()`) never matches,
+  // so it regenerated a spurious migration on every run. Keep this in
+  // sync with whatever `\d rate_limit` reports if you change it.
+  entityId    String   @unique @default(dbgenerated("('rl_'::text || gen_random_uuid())"))
   requestId   String?
   key         String   @unique
   count       Int      @default(0)

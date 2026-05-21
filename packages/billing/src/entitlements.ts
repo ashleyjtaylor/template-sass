@@ -1,10 +1,13 @@
 import type { Entitlements } from './types.js'
 
-// Single plan for the MVP. New plans get an entry here; the per-fork
-// pricing page UI surface arrives in a separate ticket.
+// Every plan key surfaced in pricing/checkout must have an entry here, or
+// entitlementsForPlan throws for that plan. No feature variance between
+// the tiers yet — add capability strings to `features` when one ships.
 const PLANS: Record<string, Entitlements> = {
   pro: {
-    seats: 25,
+    features: new Set<string>()
+  },
+  max: {
     features: new Set<string>()
   }
 }
