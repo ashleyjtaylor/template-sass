@@ -78,6 +78,8 @@ export class DataStack extends Stack {
 
     const { envName, vpc, rdsSg, imageTag, mailFrom } = props
 
+    const isProd = envName === 'production'
+
     const ecrLifecycleRules = [
       {
         rulePriority: 1,
@@ -116,14 +118,18 @@ export class DataStack extends Stack {
       }),
       allocatedStorage: 20,
       storageType: StorageType.GP3,
-      multiAz: false,
+      // Prod runs multi-AZ for failover; staging stays single-AZ to save cost.
+      multiAz: isProd,
       publiclyAccessible: false,
       storageEncrypted: true,
       autoMinorVersionUpgrade: true,
       backupRetention: Duration.days(7),
       deleteAutomatedBackups: true,
-      deletionProtection: false,
-      removalPolicy: RemovalPolicy.DESTROY
+      // Guard the production database against accidental deletion: a
+      // `cdk destroy` or a stack replacement must not silently drop the
+      // prod DB. Staging stays disposable so it can be torn down freely.
+      deletionProtection: isProd,
+      removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY
     })
 
     this.cluster = new Cluster(this, 'Cluster', {
